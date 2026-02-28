@@ -66,6 +66,11 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     const [lazyWarning, setLazyWarning] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
 
+    // Living Blueprint states
+    const [blueprint, setBlueprint] = useState(null);
+    const [tension, setTension] = useState(null);
+    const [evidence, setEvidence] = useState([]);
+
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -135,6 +140,9 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                             setIsFinished(true); // Trigger payoff screen
                                         }
                                     }
+                                    if (meta.blueprint) setBlueprint(meta.blueprint);
+                                    if (meta.tension_axis) setTension(meta.tension_axis);
+                                    if (meta.evidence) setEvidence(meta.evidence);
                                 }
                             } catch (e) {
                                 console.error("Metadata parse error", e);
@@ -249,7 +257,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
 
             {/* 35% Thinking Panel */}
             <div className="w-[35%] h-full bg-[#11100D] p-10 flex flex-col overflow-y-auto z-20">
-                <ArgumentMap currentPhase={phase} />
+                <ArgumentMap currentPhase={phase} blueprint={blueprint} tension={tension} evidence={evidence} />
 
                 <div className="my-8 w-full h-[1px] bg-borderDark/30"></div>
 
@@ -275,7 +283,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
             </div>
 
             {/* Final Payoff Overlay */}
-            {isFinished && <FinalBlueprint insights={insights} />}
+            {isFinished && <FinalBlueprint insights={insights} blueprint={blueprint} />}
         </div>
     );
 }

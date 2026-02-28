@@ -134,8 +134,22 @@ async def get_session(session_id: str):
         messages=sessions[session_id]["messages"],
         current_turn=sessions[session_id]["turn"],
         metadata={
+            "current_phase": sessions[session_id]["turn"],
             "question_score": 0,
             "lazy_example": False,
-            "insight_unlocked": None
+            "insight_unlocked": None,
+            "blueprint": {
+                "thesis": None,
+                "arg1": None,
+                "arg2": None,
+                "counterarg": None,
+                "synthesis": None
+            },
+            "tension_axis": {
+                "pole_left": "Pole A",
+                "pole_right": "Pole B",
+                "current_position": 50
+            },
+            "evidence": []
         }
     )

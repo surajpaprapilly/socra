@@ -81,11 +81,31 @@ Format:
   "current_phase": <int 1-5, representing the phase YOU ARE CURRENTLY EXECUTING>,
   "question_score": <int 1-10 evaluating their intellectual depth>,
   "lazy_example": <boolean true if they just dropped "social media", "AI", or "climate change" without nuance>,
-  "insight_unlocked": <Optional string - short label for the newly introduced lens (only 2-3 words, e.g. "Global South Perspective", or null)>
+  "insight_unlocked": <Optional string - short label for the newly introduced lens (only 2-3 words, e.g. "Global South Perspective", or null)>,
+  "blueprint": {{
+    "thesis": <string or null, their main position distilled to 1 sentence>,
+    "arg1": <string or null, their strongest argument distilled to 1 sentence using their own words>,
+    "arg2": <string or null, their second argument if any>,
+    "counterarg": <string or null, the opposing view they acknowledge>,
+    "synthesis": <string or null, their final synthesis if they reach phase 5>
+  }},
+  "tension_axis": {{
+    "pole_left": <string, 2-word label for one extreme of the debate, e.g. "Facts Necessary">,
+    "pole_right": <string, 2-word label for the other extreme, e.g. "Google Sufficient">,
+    "current_position": <int 0-100, where their argument currently leans (50 is neutral middle)>
+  }},
+  "evidence": [
+    {{
+      "label": <string, e.g. "Doctor in OT">,
+      "status": <"active" | "rejected">
+    }}
+  ]
 }}
 </metadata>
 
 If the student uses a generic/lazy example in their input (social media, climate change, etc. overused without nuance), set "lazy_example": true in metadata AND call it out directly in your response, nudging them toward more specific, surprising examples.
+
+For the blueprint, actively extract and distill what the student says as they progress. Leave fields as null if they haven't established them yet. Remember to express blueprint points as clear assertions (e.g., "Facts in long-term memory reduce cognitive load").
 """
 
     async def generate_initial_response(self, question: str) -> str:
