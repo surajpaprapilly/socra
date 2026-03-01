@@ -224,7 +224,7 @@ Depending on Phase {phase}:
 - Phase 4 (Nuance/Concession): Nudge them to consider a specific marginalized group, historical parallel, or alternative geography.
 - Phase 5 (Synthesis): Nudge them to combine the original point and the nuance into a single sophisticated sentence.
 
-Provide ONLY the nudge text. Do not output XML or <metadata>. Be encouraging but extremely brief."""
+Provide ONLY the nudge text. Do not output XML or <metadata>. Be encouraging"""
 
         response = await self.client.messages.create(
             model=self.model,

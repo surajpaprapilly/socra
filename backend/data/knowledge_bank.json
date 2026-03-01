@@ -1,0 +1,28 @@
+[
+  {
+    "id": "3c89a7fc-3042-4de8-9d04-bcd901b3efc0",
+    "created_at": "2026-03-01T08:07:32.919328Z",
+    "gp_question": "To what extent should the state regulate what individuals say online?",
+    "insight_tags": [
+      "epistemic authority",
+      "threshold of harm",
+      "transatlantic regulatory divergence",
+      "structural vs. imminent harm"
+    ],
+    "summary": "The article examines the Digital Services Act (DSA) and the controversy it has generated, particularly in the United States.\n\nThe DSA was enacted by the European Union in 2022 to create a safer and more transparent digital environment. It requires large online platforms to remove or restrict access to \u201cillegal content\u201d or risk heavy fines (up to 6% of global turnover). While similar obligations existed under the earlier E-Commerce Directive, the DSA harmonises enforcement and increases transparency.\n\nU.S. Criticism\n\nAmerican officials and tech leaders argue that the DSA threatens free speech:\n\nFCC Commissioner Brendan Carr called it incompatible with American free speech traditions.\n\nU.S. Vice President J.D. Vance criticised EU content moderation as authoritarian.\n\nMeta CEO Mark Zuckerberg accused the EU of institutionalising censorship.\n\nThe core concern is that vague categories such as \u201chate speech\u201d and \u201cdiscriminatory expressions\u201d may lead to politically biased enforcement.",
+    "follow_up_response": "The American criticism reveals that the disagreement is not simply about being \u201cfor\u201d or \u201cagainst\u201d free speech. Both the U.S. and the EU formally protect expression. The deeper conflict concerns who gets to define harm and at what threshold intervention becomes legitimate.\n\nThe American tradition, rooted in the First Amendment, permits restrictions only when harm is concrete and imminent, reflecting distrust of state power. The European approach, reflected in instruments like the European Convention on Human Rights and operationalised through the Digital Services Act, accepts broader, structural conceptions of harm such as hate speech or democratic erosion.\n\nThus, the debate is less about free speech in principle and more about epistemic authority: whether the state should intervene to prevent systemic social harms, or whether it should tolerate even harmful speech unless it poses immediate danger.",
+    "readings": [
+      {
+        "title": "Does the EU's Digital Services Act Violate Freedom of Speech?",
+        "url": "https://www.csis.org/blogs/europe-corner/does-eus-digital-services-act-violate-freedom-speech",
+        "source": "Center for Strategic and International Studies (CSIS)"
+      },
+      {
+        "title": "Singapore's 'Fake News' Fixer Risks Undermining Public Confidence",
+        "url": "https://eastasiaforum.org/2023/10/24/singapores-fake-news-fixer-risks-undermining-public-confidence/",
+        "source": "East Asia Forum"
+      }
+    ],
+    "word_count": 279
+  }
+]
