@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useSession } from '../context/SessionContext';
 import ArgumentMap from './ArgumentMap';
 import FinalBlueprint from './FinalBlueprint';
 import NudgeButton from './NudgeButton';
@@ -53,14 +54,16 @@ const getPhaseBanner = (phaseNum) => {
 };
 
 export default function ChatInterface({ sessionId, initialQuestion, initialMessage }) {
+    const { reaction } = useSession();
+    
     const [messages, setMessages] = useState([
         { role: 'assistant', content: initialMessage }
     ]);
     const [input, setInput] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
 
-    // Metadata states
-    const [phase, setPhase] = useState(1);
+    // Metadata states - start at phase 2 if reaction was provided
+    const [phase, setPhase] = useState(reaction ? 2 : 1);
     const [score, setScore] = useState(0);
     const [insights, setInsights] = useState([]);
     const [lazyWarning, setLazyWarning] = useState(false);

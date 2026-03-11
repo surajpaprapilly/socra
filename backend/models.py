@@ -8,6 +8,7 @@ class ChatMessageBase(BaseModel):
 
 class StartSessionRequest(BaseModel):
     question: str
+    reaction: Optional[str] = None
 
 class StartSessionResponse(BaseModel):
     session_id: str

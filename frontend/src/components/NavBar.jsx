@@ -13,7 +13,7 @@ export default function NavBar() {
                 <Link to="/learn" className={`hover:text-amber transition-colors ${location.pathname.startsWith('/learn') ? 'text-amber' : ''}`}>
                     [ ◈ Learn ]
                 </Link>
-                <Link to="/" className={`hover:text-amber transition-colors ${location.pathname === '/' || location.pathname.startsWith('/test') ? 'text-amber' : ''}`}>
+                <Link to="/" className={`hover:text-amber transition-colors ${location.pathname === '/' || location.pathname.startsWith('/react') || location.pathname.startsWith('/mode') || location.pathname.startsWith('/test') ? 'text-amber' : ''}`}>
                     [ ◆ Inquire ]
                 </Link>
                 <Link to="#" className="hover:text-amber transition-colors opacity-50 cursor-not-allowed" title="Coming soon">

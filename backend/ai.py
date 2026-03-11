@@ -108,9 +108,16 @@ If the student uses a generic/lazy example in their input (social media, climate
 For the blueprint, actively extract and distill what the student says as they progress. Leave fields as null if they haven't established them yet. Remember to express blueprint points as clear assertions (e.g., "Facts in long-term memory reduce cognitive load").
 """
 
-    async def generate_initial_response(self, question: str) -> str:
-        messages = [{"role": "user", "content": "I am ready to explore this question. Since you already know what the question is, please directly ask me for my gut reaction."}]
-        system_prompt = self._get_system_prompt(question, phase=1)
+    async def generate_initial_response(self, question: str, reaction: str = None) -> str:
+        if reaction:
+            user_msg = f"I am ready to explore this question. My gut reaction to this statement is: I {reaction}. Please dive into analyzing my perspective without asking for my initial stance again."
+            phase = 2
+        else:
+            user_msg = "I am ready to explore this question. Since you already know what the question is, please directly ask me for my gut reaction."
+            phase = 1
+            
+        messages = [{"role": "user", "content": user_msg}]
+        system_prompt = self._get_system_prompt(question, phase=phase)
         
         response = await self.client.messages.create(
             model=self.model,

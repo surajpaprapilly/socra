@@ -6,8 +6,12 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any
-from ai import SocraAI
 from dotenv import load_dotenv
+
+# Load environment variables early so route imports can use them
+load_dotenv()
+
+from ai import SocraAI
 from models import StartSessionRequest, StartSessionResponse, ChatMessageRequest, SessionTranscriptResponse, NudgeRequest, NudgeResponse
 from learn_routes import router as learn_router
 from bank_routes import router as bank_router
@@ -33,9 +37,6 @@ app.include_router(bank_router, prefix="/api/bank")
 # In-memory session store
 sessions: Dict[str, Dict[str, Any]] = {}
 
-# Load environment variables, particularly for ANTHROPIC_API_KEY
-load_dotenv()
-
 # Initialize AI handler
 # Will fail if ANTHROPIC_API_KEY is not set
 ai_handler = SocraAI()
@@ -44,16 +45,22 @@ ai_handler = SocraAI()
 async def start_session(request: StartSessionRequest):
     session_id = str(uuid.uuid4())
     
-    # Store initial state with a dummy user message to satisfy Anthropic's alternating role rule
-    dummy_user_msg = "I am ready to explore this question. Since you already know what the question is, please directly ask me for my gut reaction."
+    # Store initial state 
+    if request.reaction:
+        dummy_user_msg = f"I am ready to explore this question. My gut reaction to this statement is: I {request.reaction}. Please dive into analyzing my perspective without asking for my initial stance again."
+        session_turn = 2
+    else:
+        dummy_user_msg = "I am ready to explore this question. Since you already know what the question is, please directly ask me for my gut reaction."
+        session_turn = 1
+
     sessions[session_id] = {
         "question": request.question,
         "messages": [{"role": "user", "content": dummy_user_msg}],
-        "turn": 1
+        "turn": session_turn
     }
     
     # Generate the first Socratic response
-    first_response_text = await ai_handler.generate_initial_response(request.question)
+    first_response_text = await ai_handler.generate_initial_response(request.question, request.reaction)
     
     sessions[session_id]["messages"].append({"role": "assistant", "content": first_response_text})
     

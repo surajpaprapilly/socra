@@ -7,6 +7,14 @@ const FALLBACK_PROMPTS = [
     "Which sentence would you quote in a GP essay?"
 ];
 
+const SINGAPORE_DOMAINS = [
+    "straitstimes.com",
+    "channelnewsasia.com",
+    "todayonline.com",
+    "mothership.sg",
+    "ips.nus.edu.sg"
+];
+
 export default function ArticleTile({
     reading,
     question,
@@ -166,7 +174,8 @@ export default function ArticleTile({
         setIsReadOnly(true);
     };
 
-    // --- RENDER PHASES ---
+    // RENDER HELPER
+    const isSgSource = SINGAPORE_DOMAINS.some(domain => reading.url?.includes(domain));
 
     if (!isExpanded && !isDone) {
         // DEFAULT COMPACT CARD
@@ -174,14 +183,19 @@ export default function ArticleTile({
             <div
                 className={`
                     bg-[#141210] border border-[#2A2825] p-6 relative transition-all duration-300
-                    hover:border-borderDark cursor-pointer animate-in fade-in slide-in-from-bottom-4 group
+                    hover:-translate-y-1 hover:border-l-[3px] hover:border-l-amber hover:bg-[#1A1815] cursor-pointer animate-in fade-in slide-in-from-bottom-4 group
                 `}
                 style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
                 onClick={expandArticle}
             >
                 <div className="flex justify-between items-start mb-4">
-                    <div className="font-mono text-xs text-textMuted uppercase tracking-widest flex items-center space-x-3">
+                    <div className="font-mono text-xs text-textMuted uppercase tracking-widest flex items-center space-x-3 flex-wrap gap-y-2">
                         <span className="text-textDefault">{reading.source}</span>
+                        {isSgSource && (
+                            <span className="bg-[#2A2825]/50 text-amber px-2 py-0.5 border border-[#2A2825]">
+                                🇸🇬 SG PERSPECTIVE
+                            </span>
+                        )}
                         <span>•</span>
                         <span>{reading.estimated_minutes}</span>
                     </div>
@@ -210,7 +224,11 @@ export default function ArticleTile({
                     <div className="flex items-center space-x-3">
                         <span className="text-[#7A9E7E] text-lg">✓</span>
                         <h3 className="font-display text-lg text-textDefault">
-                            {reading.title} <span className="font-mono text-xs text-textMuted uppercase tracking-widest ml-2">{reading.source} · {reading.estimated_minutes}</span>
+                            {reading.title} 
+                            <span className="font-mono text-xs text-textMuted uppercase tracking-widest ml-3 inline-flex items-center space-x-2 border-l border-[#2A2825] pl-3">
+                                <span>{reading.source}</span>
+                                {isSgSource && <span className="text-amber">🇸🇬</span>}
+                            </span>
                         </h3>
                     </div>
                 </div>
@@ -239,12 +257,18 @@ export default function ArticleTile({
             {/* SECTION 1 - Header */}
             <div className="p-4 border-b border-[#2A2825] flex justify-between items-center bg-[#1A1814]">
                 <div>
-                    <div className="font-mono text-xs text-textMuted uppercase tracking-widest flex items-center space-x-2 mb-1">
+                    <div className="font-mono text-xs text-textMuted uppercase tracking-widest flex items-center space-x-2 mb-1 flex-wrap gap-y-1">
                         <a href={reading.url} target="_blank" rel="noopener noreferrer" className="hover:text-amber transition-colors">
                             ↗ Opened in new tab
                         </a>
                         <span>·</span>
                         <span>{reading.source}</span>
+                        {isSgSource && (
+                            <>
+                                <span>·</span>
+                                <span className="text-amber">🇸🇬 SG PERSPECTIVE</span>
+                            </>
+                        )}
                         <span>·</span>
                         <span>{reading.estimated_minutes}</span>
                     </div>

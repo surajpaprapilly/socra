@@ -1,13 +1,73 @@
 import os
 import json
+import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from anthropic import AsyncAnthropic
+from dotenv import load_dotenv
+
+load_dotenv()
+
+try:
+    from exa_py import Exa
+    EXA_AVAILABLE = True
+except ImportError:
+    EXA_AVAILABLE = False
 
 router = APIRouter()
 client = AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 model = os.environ.get("ANTHROPIC_MODEL", "claude-3-7-sonnet-20250219")
+
+# Define Exa instance after environment is loaded
+if EXA_AVAILABLE and os.environ.get("EXA_API_KEY"):
+    exa = Exa(api_key=os.environ.get("EXA_API_KEY"))
+else:
+    exa = None
+
+QUALITY_DOMAINS = [
+    "economist.com",
+    "theguardian.com",
+    "bbc.com",
+    "channelnewsasia.com",
+    "straitstimes.com",
+    "todayonline.com",
+    "technologyreview.com",
+    "foreignaffairs.com",
+    "brookings.edu",
+    "pewresearch.org",
+    "theatlantic.com",
+    "nytimes.com",
+    "ft.com",
+    "mothership.sg",
+    "ips.nus.edu.sg"
+]
+
+SINGAPORE_DOMAINS = [
+    "straitstimes.com",
+    "channelnewsasia.com",
+    "todayonline.com",
+    "mothership.sg",
+    "ips.nus.edu.sg"
+]
+
+DOMAIN_NAMES = {
+    "economist.com": "The Economist",
+    "theguardian.com": "The Guardian",
+    "bbc.com": "BBC",
+    "channelnewsasia.com": "Channel NewsAsia",
+    "straitstimes.com": "The Straits Times",
+    "todayonline.com": "TODAY",
+    "technologyreview.com": "MIT Technology Review",
+    "foreignaffairs.com": "Foreign Affairs",
+    "brookings.edu": "Brookings Institution",
+    "pewresearch.org": "Pew Research Center",
+    "theatlantic.com": "The Atlantic",
+    "nytimes.com": "The New York Times",
+    "ft.com": "Financial Times",
+    "mothership.sg": "Mothership",
+    "ips.nus.edu.sg": "IPS NUS"
+}
 
 class ReadingResult(BaseModel):
     title: str
@@ -60,8 +120,131 @@ class SummariseResponse(BaseModel):
 
 import re
 
+async def _generate_why_relevant(article: dict, question: str) -> str:
+    # Single small Claude call to generate 1 sentence angle mapping
+    prompt = f"""
+    Explain in ONE crisp sentence why this specific article helps a student answer this GP question.
+    Write directly to the student (e.g., "Explores how...", "Provides a Singaporean case study on...", "Offers a contrarian view on...").
+    If the source is from a Singapore domain, explicitly mention its Singapore relevance.
+    
+    GP Question: "{question}"
+    Article Title: {article.get('title', '')}
+    Snippet: {article.get('text', '')[:300]}
+    Source: {article.get('source', '')}
+    """
+    
+    try:
+        response = await client.messages.create(
+            model=model,
+            max_tokens=100,
+            system="You are an expert GP tutor. Keep the response to exactly one punchy sentence.",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.content[0].text.strip()
+    except Exception:
+        return "Provides context and evidence for understanding this topic."
+
 @router.post("/readings", response_model=ReadingsResponse)
 async def get_readings(req: ReadingsRequest):
+    if exa is None:
+        print("Exa API unavailble, falling back to original code.")
+        return await _get_readings_claude_fallback(req)
+        
+    try:
+        general_query = f"{req.question} analysis opinion long-form"
+        singapore_query = f"{req.question} Singapore"
+        
+        # We need to run exa API in async wrapper or threadpool if the SDK is mostly sync
+        def do_exa_search(query, domains, num):
+            return exa.search_and_contents(
+                query,
+                type="auto",
+                num_results=num,
+                include_domains=domains,
+                highlights={"max_characters": 2000}
+            )
+
+        general_task = asyncio.to_thread(do_exa_search, general_query, QUALITY_DOMAINS, 5)
+        singapore_task = asyncio.to_thread(do_exa_search, singapore_query, SINGAPORE_DOMAINS, 2)
+        
+        general_results, singapore_results = await asyncio.gather(general_task, singapore_task)
+        
+        # Deduplicate and mix
+        seen_urls = set()
+        mixed_results = []
+        
+        # Prioritise at least 1 SG result if available
+        sg_list = singapore_results.results if hasattr(singapore_results, 'results') else []
+        gen_list = general_results.results if hasattr(general_results, 'results') else []
+        
+        if len(sg_list) > 0:
+            sg_item = sg_list[0]
+            if sg_item.url not in seen_urls:
+                mixed_results.append(sg_item)
+                seen_urls.add(sg_item.url)
+        
+        for item in gen_list:
+            if item.url not in seen_urls and len(mixed_results) < 5:
+                mixed_results.append(item)
+                seen_urls.add(item.url)
+                
+        # Fill rest with SG if needed up to 5
+        for item in sg_list[1:]:
+            if item.url not in seen_urls and len(mixed_results) < 5:
+                mixed_results.append(item)
+                seen_urls.add(item.url)
+                
+        # Transform results
+        final_readings = []
+        why_relevant_tasks = []
+        
+        for item in mixed_results:
+            # Figure out source visually
+            domain_key = next((d for d in QUALITY_DOMAINS if d in item.url), "Unknown")
+            source = DOMAIN_NAMES.get(domain_key, "Web Source")
+            
+            snippet = ""
+            if hasattr(item, 'highlights') and item.highlights:
+                snippet = " ".join(item.highlights)
+            elif hasattr(item, 'text') and item.text:
+                snippet = item.text
+
+            reading_dict = {
+                "title": item.title or "Untitled Article",
+                "url": item.url,
+                "source": source,
+                "text": snippet
+            }
+            
+            final_readings.append(reading_dict)
+            why_relevant_tasks.append(_generate_why_relevant(reading_dict, req.question))
+            
+        why_relevants = await asyncio.gather(*why_relevant_tasks)
+        
+        # Final Assembly
+        readings_results = []
+        for i, rd in enumerate(final_readings):
+            # Estimate word count / reading time roughly (assume 250 wpm)
+            est_minutes = "5-10 min" # Fallback
+            readings_results.append(ReadingResult(
+                title=rd["title"],
+                url=rd["url"],
+                source=rd["source"],
+                why_relevant=why_relevants[i],
+                estimated_minutes=est_minutes
+            ))
+            
+        if len(readings_results) >= 3:
+            return ReadingsResponse(readings=readings_results)
+        else:
+            print("Exa returned < 3 results, falling back to Claude web search.")
+            return await _get_readings_claude_fallback(req)
+            
+    except Exception as e:
+        print(f"Exa search failed: {e}. Falling back.")
+        return await _get_readings_claude_fallback(req)
+
+async def _get_readings_claude_fallback(req: ReadingsRequest):
     system_prompt = """You are an expert researcher helping Singapore A-Level students find high-quality readings for General Paper.
 
 Given a GP question, search the web and find 4-5 excellent readings.
@@ -90,7 +273,7 @@ Strictly match this schema:
         }
     ]
 
-    readings_model = "claude-3-5-haiku-20241022"
+    readings_model = model
 
     # Use the native Anthropic web search tool
     response = await client.messages.create(
@@ -122,8 +305,6 @@ Strictly match this schema:
         if tool_results:
             messages.append({"role": "user", "content": tool_results})
         else:
-            # We break out if we are supposed to execute a tool but we didn't get any results to pass back
-            # For standard tools, we'd execute the search here. Assuming native tool does it automatically or we just break.
             break
 
         response = await client.messages.create(
