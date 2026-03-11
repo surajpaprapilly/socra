@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import ArticleTile from './ArticleTile';
 
 export default function ReadStage({ question, onComplete }) {
     const [readings, setReadings] = useState([]);
-    const [checkedUrls, setCheckedUrls] = useState(new Set());
+    const [completedUrls, setCompletedUrls] = useState(new Set());
+    const [articleNotes, setArticleNotes] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -36,17 +38,24 @@ export default function ReadStage({ question, onComplete }) {
         return () => { isMounted = false; };
     }, [question]);
 
-    const toggleCheck = (url) => {
-        const newChecked = new Set(checkedUrls);
-        if (newChecked.has(url)) newChecked.delete(url);
-        else newChecked.add(url);
-        setCheckedUrls(newChecked);
+    const handleNotesUpdate = (url, notes) => {
+        setArticleNotes(prev => ({ ...prev, [url]: notes }));
+    };
+
+    const handleMarkDone = (url) => {
+        const newCompleted = new Set(completedUrls);
+        newCompleted.add(url);
+        setCompletedUrls(newCompleted);
     };
 
     const handleContinue = () => {
-        if (checkedUrls.size >= 2) {
-            const selectedReadings = readings.filter(r => checkedUrls.has(r.url));
-            onComplete(selectedReadings);
+        if (completedUrls.size >= 2) {
+            const selectedReadings = readings.filter(r => completedUrls.has(r.url));
+            const finalNotes = selectedReadings
+                .map(r => articleNotes[r.url] || null)
+                .filter(n => n !== null && (n.free_notes || n.highlights.length > 0));
+
+            onComplete(selectedReadings, finalNotes);
         }
     };
 
@@ -84,64 +93,26 @@ export default function ReadStage({ question, onComplete }) {
                 </div>
 
                 <div className="space-y-6 mb-16">
-                    {readings.map((reading, idx) => {
-                        const isChecked = checkedUrls.has(reading.url);
-                        return (
-                            <div
-                                key={idx}
-                                className={`
-                                    bg-[#141210] border border-[#2A2825] p-6 relative transition-all duration-300
-                                    animate-in fade-in slide-in-from-bottom-8 
-                                    ${isChecked ? 'border-l-[3px] border-l-amber' : 'hover:border-borderDark'}
-                                `}
-                                style={{ animationDelay: `${idx * 80}ms`, animationFillMode: 'both' }}
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="font-mono text-xs text-textMuted uppercase tracking-widest flex items-center space-x-3">
-                                        <span className="text-textDefault">{reading.source}</span>
-                                        <span>•</span>
-                                        <span>{reading.estimated_minutes}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => toggleCheck(reading.url)}
-                                        className="w-5 h-5 flex items-center justify-center text-lg focus:outline-none transition-colors"
-                                    >
-                                        {isChecked ? (
-                                            <span className="text-amber">●</span>
-                                        ) : (
-                                            <span className="text-textMuted/40 hover:text-amber/50">○</span>
-                                        )}
-                                    </button>
-                                </div>
-
-                                <h3 className="font-display text-2xl text-textDefault mb-3">
-                                    {reading.title}
-                                </h3>
-
-                                <p className="font-serif text-sm text-amber/70 leading-relaxed mb-6">
-                                    {reading.why_relevant}
-                                </p>
-
-                                <a
-                                    href={reading.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="font-mono text-xs text-amber uppercase tracking-widest hover:underline hover:underline-offset-4 transition-all"
-                                >
-                                    [ Open Article → ]
-                                </a>
-                            </div>
-                        );
-                    })}
+                    {readings.map((reading, idx) => (
+                        <ArticleTile
+                            key={idx}
+                            reading={reading}
+                            question={question}
+                            delay={idx * 80}
+                            initialNotes={articleNotes[reading.url]}
+                            onNotesUpdate={(url, notes) => handleNotesUpdate(url, notes)}
+                            onMarkDone={() => handleMarkDone(reading.url)}
+                        />
+                    ))}
                 </div>
 
                 <div className="flex justify-center pb-24 animate-in fade-in duration-1000 delay-500">
                     <button
                         onClick={handleContinue}
-                        disabled={checkedUrls.size < 2}
+                        disabled={completedUrls.size < 2}
                         className={`
                             px-8 py-3 font-mono tracking-widest uppercase text-sm border transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-amber
-                            ${checkedUrls.size >= 2
+                            ${completedUrls.size >= 2
                                 ? 'bg-transparent border-amber text-amber hover:bg-amber/10'
                                 : 'bg-transparent border-borderDark text-textMuted/50 cursor-not-allowed'
                             }

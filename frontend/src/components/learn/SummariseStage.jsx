@@ -1,10 +1,35 @@
 import { useState } from 'react';
 
-export default function SummariseStage({ question, readingsRead, onBankReady }) {
+export default function SummariseStage({ question, readingsRead, articleNotes, onBankReady }) {
     const [summary, setSummary] = useState("");
     const [followUpResponse, setFollowUpResponse] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [feedback, setFeedback] = useState(null); // { question, tags, ready }
+    const [isNotesExpanded, setIsNotesExpanded] = useState(true);
+
+    const totalHighlights = articleNotes?.reduce((acc, note) => acc + (note.highlights ? note.highlights.length : 0), 0) || 0;
+    const articlesWithHighlights = articleNotes?.filter(n => n.highlights && n.highlights.length > 0).length || 0;
+
+    const groupedHighlights = {};
+    if (articleNotes) {
+        articleNotes.forEach(note => {
+            if (note.highlights) {
+                note.highlights.forEach(h => {
+                    if (!groupedHighlights[h.tag]) {
+                        groupedHighlights[h.tag] = [];
+                    }
+                    groupedHighlights[h.tag].push({ ...h, sourceTitle: note.article_title });
+                });
+            }
+        });
+    }
+
+    const tagIcons = {
+        'Key Argument': '✦',
+        'Surprising Fact': '◈',
+        'Use in Essay': '⚡',
+        'Still Confused': '?'
+    };
 
     const wordCount = summary.trim().split(/\s+/).filter(w => w.length > 0).length;
 
@@ -16,7 +41,8 @@ export default function SummariseStage({ question, readingsRead, onBankReady }) 
             const body = {
                 question,
                 summary: summary + (followUpResponse ? "\n\nFollow-up: " + followUpResponse : ""),
-                readings_read: readingsRead
+                readings_read: readingsRead,
+                article_notes: articleNotes || []
             };
 
             const response = await fetch('http://localhost:8000/api/learn/summarise', {
@@ -74,6 +100,54 @@ export default function SummariseStage({ question, readingsRead, onBankReady }) 
         <div className="flex-1 w-full max-w-6xl mx-auto flex flex-col md:flex-row gap-12 py-12 px-6">
             {/* LEFT — Writing Area (60%) */}
             <div className="w-full md:w-[60%] flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-700">
+
+                {/* Collapsible Reading Notes Panel */}
+                {totalHighlights > 0 && (
+                    <div className="mb-8 border border-[#2A2825] bg-[#141210]">
+                        <button
+                            onClick={() => setIsNotesExpanded(!isNotesExpanded)}
+                            className="w-full flex justify-between items-center p-3 px-4 bg-[#1A1814] border-b border-[#2A2825] focus:outline-none hover:bg-[#1f1d18] transition-colors"
+                        >
+                            <span className="font-mono text-xs text-amber uppercase tracking-widest flex items-center">
+                                <span className="mr-2">◈</span>
+                                YOUR READING NOTES <span className="text-textMuted ml-3 lowercase normal-case text-[10px]">({totalHighlights} highlights across {articlesWithHighlights} articles)</span>
+                            </span>
+                            <span className="font-mono text-[10px] text-textMuted uppercase tracking-widest">
+                                [ {isNotesExpanded ? 'collapse ▴' : 'expand ▾'} ]
+                            </span>
+                        </button>
+
+                        {isNotesExpanded && (
+                            <div className="p-4 space-y-6 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                {Object.entries(groupedHighlights).map(([tag, hlts]) => (
+                                    <div key={tag} className="space-y-2">
+                                        <div className="font-mono text-[11px] text-amber/80 uppercase tracking-widest mb-3 flex items-center border-b border-[#2A2825] pb-1">
+                                            <span className="mr-2">{tagIcons[tag]}</span>
+                                            {tag === 'Key Argument' ? 'KEY ARGUMENTS' :
+                                                tag === 'Surprising Fact' ? 'SURPRISING FACTS' :
+                                                    tag === 'Use in Essay' ? 'USE IN ESSAY' :
+                                                        'STILL CONFUSED'}
+                                            <span className="ml-2 bg-[#2A2825] px-1.5 rounded-sm text-[9px]">{hlts.length}</span>
+                                        </div>
+                                        {hlts.map((h, i) => (
+                                            <div key={i} className="pl-2 border-l-2 border-[#2A2825] mb-3">
+                                                <p className="font-serif text-[14px] leading-relaxed text-textDefault/90 italic">
+                                                    "{h.quote}" — <span className="font-mono text-[9px] uppercase tracking-widest text-textMuted/60 not-italic">{h.sourceTitle}</span>
+                                                </p>
+                                                {h.note && (
+                                                    <p className="font-mono text-[11px] text-amber/60 mt-1 pl-2 border-l border-amber/20">
+                                                        Note: {h.note}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <div className="mb-6">
                     <label className="font-mono text-xs text-textMuted uppercase tracking-[0.2em]">
                         Your Synthesis

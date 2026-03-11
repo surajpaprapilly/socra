@@ -11,14 +11,16 @@ export default function LearnMode() {
 
     const [currentStage, setCurrentStage] = useState(1);
     const [readingsRead, setReadingsRead] = useState([]);
+    const [articleNotes, setArticleNotes] = useState([]);
 
     // If accessed directly without a question, redirect to landing
     if (!question) {
         return <Navigate to="/" replace />;
     }
 
-    const handleReadComplete = (selectedReadings) => {
+    const handleReadComplete = (selectedReadings, finalNotes) => {
         setReadingsRead(selectedReadings);
+        setArticleNotes(finalNotes);
         setCurrentStage(2);
     };
 
@@ -43,6 +45,7 @@ export default function LearnMode() {
                 <SummariseStage
                     question={question}
                     readingsRead={readingsRead}
+                    articleNotes={articleNotes}
                     onBankReady={handleBankReady}
                 />
             )}

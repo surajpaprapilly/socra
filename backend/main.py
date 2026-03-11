@@ -6,7 +6,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any
-
+from ai import SocraAI
+from dotenv import load_dotenv
 from models import StartSessionRequest, StartSessionResponse, ChatMessageRequest, SessionTranscriptResponse, NudgeRequest, NudgeResponse
 from learn_routes import router as learn_router
 from bank_routes import router as bank_router
@@ -32,12 +33,8 @@ app.include_router(bank_router, prefix="/api/bank")
 # In-memory session store
 sessions: Dict[str, Dict[str, Any]] = {}
 
-from dotenv import load_dotenv
-
 # Load environment variables, particularly for ANTHROPIC_API_KEY
 load_dotenv()
-
-from ai import SocraAI
 
 # Initialize AI handler
 # Will fail if ANTHROPIC_API_KEY is not set
