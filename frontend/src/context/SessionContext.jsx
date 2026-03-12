@@ -10,6 +10,14 @@ export function SessionProvider({ children }) {
         reaction: null,
         source: 'statement', // 'statement' | 'custom_question'
         customQuestion: null,
+        
+        // Canvas Flow fields
+        conflictId: null,
+        sideA: null,
+        sideB: null,
+        readings: [],
+        notes: [],
+        canvasData: null,
     });
 
     const setSession = (newData) => {
@@ -24,6 +32,12 @@ export function SessionProvider({ children }) {
             reaction: null,
             source: 'statement',
             customQuestion: null,
+            conflictId: null,
+            sideA: null,
+            sideB: null,
+            readings: [],
+            notes: [],
+            canvasData: null,
         });
     };
 

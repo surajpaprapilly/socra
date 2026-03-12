@@ -154,6 +154,55 @@ export default function BankView() {
                                     </div>
                                 )}
 
+                                {isExpanded && entry.canvas_data && (
+                                    <div className="mb-8 border border-borderDark/40 bg-[#0D0C0A] p-4 relative overflow-hidden flex flex-col items-center justify-center animate-in fade-in slide-in-from-top-4 duration-500 min-h-[250px]">
+                                        <span className="absolute top-2 left-3 font-mono text-[10px] text-textMuted uppercase tracking-widest bg-[#141210] px-2 py-1 z-20">
+                                            Canvas Snapshot
+                                        </span>
+                                        <div className="relative w-full h-full flex items-center justify-center transform scale-[0.35] md:scale-50 origin-center pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+                                            <svg className="absolute inset-0 w-full h-full min-h-[400px] overflow-visible z-10">
+                                                {entry.canvas_data.connectors?.map((conn, cIdx) => {
+                                                    const fromCard = entry.canvas_data.cards.find(c => c.id === conn.fromCardId);
+                                                    const toCard = entry.canvas_data.cards.find(c => c.id === conn.toCardId);
+                                                    if (!fromCard || !toCard) return null;
+                                                    
+                                                    // rough estimate of dots for static render
+                                                    const getDot = (card, edge) => {
+                                                        const w = 210, h = 130;
+                                                        let x = card.position.x;
+                                                        let y = card.position.y;
+                                                        switch (edge) {
+                                                            case 'top': return [x + w/2, y];
+                                                            case 'right': return [x + w, y + h/2];
+                                                            case 'bottom': return [x + w/2, y + h];
+                                                            case 'left': return [x, y + h/2];
+                                                            default: return [x+w/2, y+h/2];
+                                                        }
+                                                    };
+                                                    const [x1, y1] = getDot(fromCard, conn.fromEdge);
+                                                    const [x2, y2] = getDot(toCard, conn.toEdge);
+                                                    return (
+                                                        <line key={cIdx} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#C8963E" strokeWidth="2" strokeOpacity="0.5" />
+                                                    );
+                                                })}
+                                            </svg>
+                                            
+                                            <div className="absolute inset-0 w-full h-full min-h-[400px]">
+                                                {entry.canvas_data.cards?.map((card, cIdx) => (
+                                                    <div 
+                                                        key={cIdx} 
+                                                        className="absolute w-[210px] h-[130px] border border-[#2A2825] bg-[#1C1A17] p-4 flex flex-col justify-center shadow-lg"
+                                                        style={{ left: card.position.x, top: card.position.y }}
+                                                    >
+                                                        <div className="font-mono text-[12px] text-amber mb-2 uppercase tracking-widest">{card.tag}</div>
+                                                        <div className="font-serif text-sm text-white/80 line-clamp-3">"{card.quote}"</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="flex flex-wrap gap-2 mb-6">
                                     {entry.insight_tags.map(tag => (
                                         <button

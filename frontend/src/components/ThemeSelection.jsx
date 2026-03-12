@@ -18,17 +18,13 @@ export default function ThemeSelection() {
     }, []);
 
     const handleThemeSelect = (theme) => {
-        // Pick a random statement for this theme
-        const randomStatement = theme.statements[Math.floor(Math.random() * theme.statements.length)];
-        
         setSession({
             theme: theme.id,
             themeName: theme.name,
-            statement: randomStatement,
-            source: 'statement'
+            source: 'theme_conflict'
         });
         
-        navigate('/react');
+        navigate(`/conflicts/${theme.id}`);
     };
 
     const handleCustomSubmit = (e) => {

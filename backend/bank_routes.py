@@ -27,6 +27,7 @@ class BankAddRequest(BaseModel):
     follow_up_response: Optional[str] = ""
     insight_tags: List[str]
     readings: List[ReadingRef]
+    canvas_data: Optional[dict] = None
 
 class BankEntry(BaseModel):
     id: str
@@ -37,6 +38,7 @@ class BankEntry(BaseModel):
     follow_up_response: str
     readings: List[ReadingRef]
     word_count: int
+    canvas_data: Optional[dict] = None
 
 class BankAddResponse(BaseModel):
     entry_id: str
@@ -60,7 +62,8 @@ async def add_to_bank(req: BankAddRequest):
         "summary": req.summary,
         "follow_up_response": req.follow_up_response,
         "readings": [r.dict() for r in req.readings],
-        "word_count": word_count
+        "word_count": word_count,
+        "canvas_data": req.canvas_data
     }
 
     data.insert(0, new_entry) # Put newest at the top

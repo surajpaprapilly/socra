@@ -6,6 +6,15 @@ from pydantic import BaseModel
 from typing import List, Optional
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
+from models import (
+    ReadingResult,
+    ConflictReadingsRequest,
+    ConflictReadingsResponse,
+    CanvasSummaryRequest,
+    CanvasSummaryResponse,
+    CanvasCardMeta,
+    CanvasConnectorMeta
+)
 
 load_dotenv()
 
@@ -68,13 +77,6 @@ DOMAIN_NAMES = {
     "mothership.sg": "Mothership",
     "ips.nus.edu.sg": "IPS NUS"
 }
-
-class ReadingResult(BaseModel):
-    title: str
-    url: str
-    source: str
-    why_relevant: str
-    estimated_minutes: str
 
 class ReadingsRequest(BaseModel):
     question: str
@@ -143,6 +145,177 @@ async def _generate_why_relevant(article: dict, question: str) -> str:
         return response.content[0].text.strip()
     except Exception:
         return "Provides context and evidence for understanding this topic."
+
+
+@router.post("/conflict-readings", response_model=ConflictReadingsResponse)
+async def get_conflict_readings(req: ConflictReadingsRequest):
+    if exa is None:
+        print("Exa API unavailble, falling back to original code.")
+        return await _get_conflict_readings_claude_fallback(req)
+        
+    try:
+        side_a_query = f"{req.side_a} {req.search_query} analysis arguments"
+        side_b_query = f"{req.side_b} {req.search_query} analysis arguments"
+        sg_query = f"{req.search_query} Singapore"
+        
+        def do_exa_search(query, domains, num):
+            return exa.search_and_contents(
+                query,
+                type="auto",
+                num_results=num,
+                include_domains=domains,
+                highlights={"max_characters": 2000}
+            )
+
+        side_a_task = asyncio.to_thread(do_exa_search, side_a_query, QUALITY_DOMAINS, 3)
+        side_b_task = asyncio.to_thread(do_exa_search, side_b_query, QUALITY_DOMAINS, 3)
+        sg_task = asyncio.to_thread(do_exa_search, sg_query, SINGAPORE_DOMAINS, 2)
+        
+        side_a_res, side_b_res, sg_res = await asyncio.gather(side_a_task, side_b_task, sg_task)
+        
+        seen_urls = set()
+        
+        async def process_results(results_list, limit, question_context, is_sg=False):
+            items = results_list.results if hasattr(results_list, 'results') else []
+            processed = []
+            tasks = []
+            dicts = []
+            
+            for item in items:
+                if item.url in seen_urls or len(processed) >= limit:
+                    continue
+                seen_urls.add(item.url)
+                
+                domain_key = next((d for d in (SINGAPORE_DOMAINS if is_sg else QUALITY_DOMAINS) if d in item.url), "Unknown")
+                source = DOMAIN_NAMES.get(domain_key, "Web Source")
+                
+                snippet = ""
+                if hasattr(item, 'highlights') and item.highlights:
+                    snippet = " ".join(item.highlights)
+                elif hasattr(item, 'text') and item.text:
+                    snippet = item.text
+
+                reading_dict = {
+                    "title": item.title or "Untitled Article",
+                    "url": item.url,
+                    "source": source,
+                    "text": snippet
+                }
+                
+                dicts.append(reading_dict)
+                # For Singapore articles, append a prompt hint to the question_context
+                q_prompt = f"{question_context}. Emphasize Singapore relevance." if is_sg else question_context
+                tasks.append(_generate_why_relevant(reading_dict, q_prompt))
+                
+            if not tasks:
+                return []
+                
+            why_relevants = await asyncio.gather(*tasks)
+            
+            for i, rd in enumerate(dicts):
+                processed.append(ReadingResult(
+                    title=rd["title"],
+                    url=rd["url"],
+                    source=rd["source"],
+                    why_relevant=why_relevants[i],
+                    estimated_minutes="5-10 min"
+                ))
+                
+            return processed
+
+        question_a = f"Topic: {req.theme}. Exploring argument: {req.side_a} vs {req.side_b}. This article supports {req.side_a}."
+        question_b = f"Topic: {req.theme}. Exploring argument: {req.side_a} vs {req.side_b}. This article supports {req.side_b}."
+        question_sg = f"Topic: {req.theme}. Exploring: {req.search_query}. This article provides a Singapore case study."
+        
+        # We need to process sequentially so deduplication by seen_urls works across lists
+        # Wait, if we process sequentially, `gather` within process_results is still fine
+        side_a_processed = await process_results(side_a_res, 3, question_a)
+        side_b_processed = await process_results(side_b_res, 3, question_b)
+        sg_processed = await process_results(sg_res, 2, question_sg, is_sg=True)
+        
+        # If any list is empty, maybe fallback or just return what we have? 
+        # For robustness, returning what we have.
+        return ConflictReadingsResponse(
+            side_a_articles=side_a_processed,
+            side_b_articles=side_b_processed,
+            singapore_articles=sg_processed
+        )
+            
+    except Exception as e:
+        print(f"Exa search failed for conflict-readings: {e}. Falling back.")
+        return await _get_conflict_readings_claude_fallback(req)
+
+async def _get_conflict_readings_claude_fallback(req: ConflictReadingsRequest):
+    system_prompt = f"""You are an expert researcher helping Singapore A-Level students find high-quality readings for a GP conflict: {req.side_a} vs {req.side_b}.
+    
+Find a total of 6-8 excellent readings split into 3 categories:
+1. side_a_articles: 2-3 articles supporting "{req.side_a}"
+2. side_b_articles: 2-3 articles supporting "{req.side_b}"
+3. singapore_articles: 1-2 articles providing a Singapore context for this conflict.
+
+Prioritise: long-form journalism, reports, reputable think tanks (Brookings, Pew, The Economist, BBC, Guardian, CNA, Straits Times).
+Avoid: Reddit, Wikipedia, low-quality blogs.
+
+Output ONLY a valid JSON object matching exactly this schema:
+{{
+  "side_a_articles": [ {{ "title": "...", "url": "https...", "source": "Pub Name", "why_relevant": "...", "estimated_minutes": "8 min" }} ],
+  "side_b_articles": [ ... ],
+  "singapore_articles": [ ... ]
+}}"""
+
+    messages = [
+        {"role": "user", "content": f"Find readings for Theme: {req.theme}, Conflict: {req.side_a} vs {req.side_b}. General Query: {req.search_query}"}
+    ]
+
+    response = await client.messages.create(
+        model=model,
+        max_tokens=2500,
+        system=system_prompt,
+        tools=[{"type": "web_search_20250305", "name": "web_search"}],
+        messages=messages
+    )
+
+    max_loops = 3
+    loop_count = 0
+    while response.stop_reason == "tool_use" and loop_count < max_loops:
+        loop_count += 1
+        messages.append({"role": "assistant", "content": response.content})
+
+        tool_results = []
+        for block in response.content:
+            if getattr(block, "type", None) == "tool_result":
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.tool_use_id,
+                    "content": block.content
+                })
+
+        if tool_results:
+            messages.append({"role": "user", "content": tool_results})
+        else:
+            break
+
+        response = await client.messages.create(
+            model=model,
+            max_tokens=2500,
+            system=system_prompt,
+            tools=[{"type": "web_search_20250305", "name": "web_search"}],
+            messages=messages
+        )
+
+    text_blocks = [block.text for block in response.content if block.type == "text"]
+    final_text = text_blocks[0] if text_blocks else '{"side_a_articles":[], "side_b_articles":[], "singapore_articles":[]}'
+    
+    import re
+    final_text = re.sub(r'^```(?:json)?\s*', '', final_text.strip())
+    final_text = re.sub(r'\s*```$', '', final_text.strip())
+
+    try:
+        data = json.loads(final_text)
+        return ConflictReadingsResponse(**data)
+    except Exception as e:
+        print("Failed to parse JSON:", final_text)
+        raise HTTPException(status_code=500, detail="Failed to parse fallback readings response")
 
 @router.post("/readings", response_model=ReadingsResponse)
 async def get_readings(req: ReadingsRequest):
@@ -377,6 +550,59 @@ async def get_reading_prompts(req: ReadingPromptsRequest):
         print("Failed to parse reading prompts JSON:", final_text)
         raise HTTPException(status_code=500, detail="Failed to parse reading prompts response")
 
+
+@router.post("/canvas-summary", response_model=CanvasSummaryResponse)
+async def canvas_summary(req: CanvasSummaryRequest):
+    system_prompt = f"""You are Socra, an expert General Paper tutor. The student has just finished a Connection Canvas mapping out the conflict: "{req.side_a} vs {req.side_b}".
+    
+The student arranged {len(req.cards)} evidence cards and drew {len(req.connectors)} connections.
+System inferred their leaning: "{req.inferred_leaning}" (based on spatial counting: side_a = left, side_b = right).
+
+Here is the data of the cards they placed:
+"""
+    for c in req.cards:
+        side_guess = req.side_a if c.position.get("x", 0) < 450 else req.side_b
+        system_prompt += f"- ID: {c.id} | Tag: {c.tag} | Side Placed: {side_guess} | Quote: '{c.quote}'\n"
+
+    system_prompt += f"""
+TASK:
+1. "transition_message": A 1-2 sentence observation about what they did well in the canvas. If leaning is {req.side_a}, mention it warmly.
+2. "opening_socratic_question": The FIRST question to kick off the Socratic chat session. It MUST reference one specific card they placed (by quote/idea) and challenge or probe it based on the tension between the two sides.
+3. "inferred_position": Just return the 'inferred_leaning' value or a refined version.
+
+Output ONLY valid JSON matching this schema exactly:
+{{
+  "transition_message": "string",
+  "opening_socratic_question": "string",
+  "inferred_position": "string"
+}}"""
+
+    messages = [{"role": "user", "content": "Analyze my canvas data and provide the exact JSON response."}]
+
+    response = await client.messages.create(
+        model=model,
+        max_tokens=600,
+        system=system_prompt,
+        messages=messages
+    )
+
+    final_text = response.content[0].text
+    if "```json" in final_text:
+        final_text = final_text.split("```json")[1].split("```")[0].strip()
+    elif "```" in final_text:
+        final_text = final_text.split("```")[1].split("```")[0].strip()
+
+    try:
+        data = json.loads(final_text)
+        return CanvasSummaryResponse(**data)
+    except Exception as e:
+        print("Failed to parse canvas-summary JSON:", final_text)
+        # Fallback
+        return CanvasSummaryResponse(
+            transition_message="You've mapped out some great evidence here.",
+            opening_socratic_question=f"Looking at the evidence you've gathered on the '{req.inferred_leaning}' side, which piece do you think is the hardest to defend?",
+            inferred_position=req.inferred_leaning
+        )
 
 @router.post("/summarise", response_model=SummariseResponse)
 async def summarise_learning(req: SummariseRequest):

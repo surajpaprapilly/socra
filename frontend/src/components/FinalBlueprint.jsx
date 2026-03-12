@@ -1,7 +1,11 @@
 import { useState } from 'react';
+import { useSession } from '../context/SessionContext';
 
 export default function FinalBlueprint({ insights, blueprint }) {
     const [copied, setCopied] = useState(false);
+    const [savedToBank, setSavedToBank] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const { customQuestion, readings, canvasData } = useSession();
 
     const handleExport = () => {
         if (!blueprint) return;
@@ -31,6 +35,39 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
         navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleSaveToBank = async () => {
+        if (!blueprint || isSaving || savedToBank) return;
+        setIsSaving(true);
+        
+        try {
+            const body = {
+                question: customQuestion || "Final Essay Plan",
+                summary: `Thesis: ${blueprint.thesis || 'N/A'}\nArgument 1: ${blueprint.arg1 || 'N/A'}\nArgument 2: ${blueprint.arg2 || 'N/A'}\nCounterargument: ${blueprint.counterarg || 'N/A'}\nSynthesis: ${blueprint.synthesis || 'N/A'}`,
+                follow_up_response: "",
+                insight_tags: insights || [],
+                readings: readings || [],
+                canvas_data: canvasData || null
+            };
+
+            const response = await fetch('http://localhost:8000/api/bank/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (response.ok) {
+                setSavedToBank(true);
+            } else {
+                alert("Failed to save to Knowledge Bank.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error saving to Knowledge Bank.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -84,17 +121,25 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
                     <div className="text-center text-textMuted my-12 italic font-serif">No blueprint data available.</div>
                 )}
 
-                <div className="mt-12 flex justify-center space-x-6">
+                <div className="mt-12 flex justify-center space-x-6 flex-wrap gap-y-4">
                     <button
                         onClick={handleExport}
-                        className={`px-8 py-3 border font-mono tracking-widest uppercase text-xs transition-colors duration-300 ${copied ? 'bg-amber/20 border-amber text-amber' : 'bg-transparent border-amber/50 text-amber hover:bg-amber/10'}`}
+                        className={`px-6 py-3 border font-mono tracking-widest uppercase text-[11px] transition-colors duration-300 ${copied ? 'bg-amber/20 border-amber text-amber' : 'bg-transparent border-amber/50 text-amber hover:bg-amber/10'}`}
                     >
                         {copied ? 'Copied to Clipboard ✓' : 'Export Essay Plan'}
                     </button>
 
                     <button
+                        onClick={handleSaveToBank}
+                        disabled={savedToBank || isSaving}
+                        className={`px-6 py-3 border font-mono tracking-widest uppercase text-[11px] transition-colors duration-300 ${savedToBank ? 'bg-[#7A9E7E]/20 border-[#7A9E7E] text-[#7A9E7E]' : 'bg-transparent border-[#7A9E7E] text-[#7A9E7E] hover:bg-[#7A9E7E]/10 disabled:opacity-50'}`}
+                    >
+                        {isSaving ? 'Saving...' : savedToBank ? 'Saved in Bank ✓' : 'Add to Knowledge Bank'}
+                    </button>
+
+                    <button
                         onClick={() => window.location.reload()}
-                        className="px-8 py-3 bg-transparent border border-borderDark text-textDefault/70 font-mono tracking-widest uppercase text-xs hover:border-textDefault hover:text-textDefault transition-colors"
+                        className="px-6 py-3 bg-transparent border border-borderDark text-textDefault/70 font-mono tracking-widest uppercase text-[11px] hover:border-textDefault hover:text-textDefault transition-colors"
                     >
                         Begin New Inquiry
                     </button>
