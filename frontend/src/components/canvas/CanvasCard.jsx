@@ -103,7 +103,7 @@ export default function CanvasCard({
           key={edge}
           className={`
             absolute w-[10px] h-[10px] bg-amber rounded-full z-20 cursor-crosshair
-            opacity-0 hover:opacity-100 hover:scale-150 transition-all duration-150
+            opacity-100 hover:scale-150 transition-all duration-150
             ${positionClasses[edge]}
           `}
           onMouseDown={(e) => {
@@ -151,7 +151,7 @@ export default function CanvasCard({
       >
         {/* Connection Hover Overlay to reveal dots */}
         {mode === 'connect' && (
-          <div className="absolute inset-[-12px] z-10 opacity-0 hover:opacity-100 pointer-events-none">
+          <div className="absolute inset-[-12px] z-10 pointer-events-none">
              <div className="absolute inset-[12px] border border-transparent pointer-events-auto">
                 {renderConnectors()}
              </div>

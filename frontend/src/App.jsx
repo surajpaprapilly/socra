@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { SessionProvider } from './context/SessionContext';
+import { SessionProvider, useSession } from './context/SessionContext';
 import LandingScreen from './components/LandingScreen'; // Kept for reference but unused in main flow
 import ThemeSelection from './components/ThemeSelection';
 import ConflictSelection from './components/conflicts/ConflictSelection';

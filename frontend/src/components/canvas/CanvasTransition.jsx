@@ -75,7 +75,7 @@ export default function CanvasTransition() {
 
   if (!canvasData) return null;
 
-  const { inferredLeaning } = canvasData;
+  const { inferredLeaning, cards, connectors } = canvasData;
 
   const getLeaningText = () => {
     if (inferredLeaning === 'side_a') return `You put more on the ${sideA} side.\nLet's see if you can defend that.`;
