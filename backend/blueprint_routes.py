@@ -45,9 +45,30 @@ async def patch_blueprint(session_id: str, update_data: dict):
                 current_data["counter_argument"] = value
             else:
                 current_data["counter_argument"].update(value)
+        elif key == "key_terms" and isinstance(value, list):
+            for new_term in value:
+                term_str = new_term.get("term")
+                if not term_str:
+                    continue
+                existing = next((t for t in current_data["key_terms"] if t.get("term") == term_str), None)
+                if existing:
+                    existing.update({k: v for k, v in new_term.items() if v is not None})
+                else:
+                    current_data["key_terms"].append(new_term)
+        elif key == "paragraphs" and isinstance(value, list):
+            for i, p in enumerate(value):
+                # Only merge non-null fields
+                clean_p = {k: v for k, v in p.items() if v is not None}
+                if not clean_p:
+                    continue
+                if i < len(current_data.get("paragraphs", [])):
+                    current_data["paragraphs"][i].update(clean_p)
+                else:
+                    current_data.setdefault("paragraphs", []).append(clean_p)
         else:
-            # Overwrite the field entirely (standard for lists like paragraphs, key_terms)
-            current_data[key] = value
+            # Overwrite the field entirely for scalars
+            if value is not None:
+                current_data[key] = value
             
     # Validate and save
     updated_bp = BlueprintModel.model_validate(current_data)

@@ -1,0 +1,381 @@
+import { useState, useEffect } from 'react';
+
+// Deep merge helper that ensures fields don't accidentally revert to null when the backend returns nulls due to partial LLM outputs
+const mergeBlueprintState = (prev, incoming) => {
+    if (!prev) return incoming;
+    if (!incoming) return prev;
+
+    const merged = { ...prev };
+    
+    // Arrays handling
+    if (incoming.key_terms && Array.isArray(incoming.key_terms)) {
+        incoming.key_terms.forEach(newTerm => {
+            if (!newTerm.term) return;
+            const existingIdx = merged.key_terms?.findIndex(t => t.term === newTerm.term);
+            if (existingIdx !== undefined && existingIdx >= 0) {
+                merged.key_terms[existingIdx] = { 
+                    ...merged.key_terms[existingIdx], 
+                    ...Object.fromEntries(Object.entries(newTerm).filter(([_, v]) => v !== null)) 
+                };
+            } else {
+                merged.key_terms = [...(merged.key_terms || []), newTerm];
+            }
+        });
+    }
+
+    if (incoming.paragraphs && Array.isArray(incoming.paragraphs)) {
+        merged.paragraphs = [...(merged.paragraphs || [])];
+        incoming.paragraphs.forEach((p, idx) => {
+            if (idx < merged.paragraphs.length) {
+                merged.paragraphs[idx] = {
+                    ...merged.paragraphs[idx],
+                    ...Object.fromEntries(Object.entries(p).filter(([_, v]) => v !== null))
+                };
+            } else {
+                merged.paragraphs.push(p);
+            }
+        });
+    }
+    
+    // Counter argument
+    if (incoming.counter_argument) {
+        merged.counter_argument = {
+            ...(merged.counter_argument || {}),
+            ...Object.fromEntries(Object.entries(incoming.counter_argument).filter(([_, v]) => v !== null))
+        };
+    }
+    
+    // Scalars
+    if (incoming.thesis !== null && incoming.thesis !== undefined) merged.thesis = incoming.thesis;
+    if (incoming.checklist) merged.checklist = incoming.checklist;
+    if (incoming.conclusion_prompts) merged.conclusion_prompts = incoming.conclusion_prompts;
+    if (incoming.session_quality) {
+        merged.session_quality = { ...(merged.session_quality || {}), ...incoming.session_quality };
+    }
+
+    return merged;
+};
+
+export default function BlueprintPanel({ sessionId, initialQuestion }) {
+    const [blueprint, setBlueprint] = useState(null);
+    const [isPolling, setIsPolling] = useState(true);
+    const [exportError, setExportError] = useState(false);
+    
+    // Local checklist state for interactivity
+    const [localChecklist, setLocalChecklist] = useState([
+        { label: "Define key terms", completed: false },
+        { label: "Establish clear thesis", completed: false },
+        { label: "First supporting argument", completed: false },
+        { label: "Second supporting argument", completed: false },
+        { label: "Address counter-argument", completed: false },
+        { label: "Synthesize conclusion", completed: false }
+    ]);
+
+    useEffect(() => {
+        if (blueprint?.checklist) {
+            setLocalChecklist(blueprint.checklist);
+        }
+    }, [blueprint?.checklist]);
+
+    const toggleChecklist = (idx) => {
+        setLocalChecklist(prev => {
+            const copy = [...prev];
+            copy[idx].completed = !copy[idx].completed;
+            return copy;
+        });
+    };
+
+    useEffect(() => {
+        if (!sessionId || !isPolling) return;
+
+        const fetchBp = async () => {
+            try {
+                const res = await fetch(`http://localhost:8000/api/blueprint/${sessionId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setBlueprint(prev => mergeBlueprintState(prev, data));
+                    
+                    // Check if polling should stop
+                    if (data.session_quality) {
+                        const sq = data.session_quality;
+                        if (sq.question_autopsy_complete && sq.both_sides_argued && sq.thesis_refined && sq.analytical_links_count >= 3) {
+                            setIsPolling(false);
+                        }
+                    }
+                }
+            } catch (err) {
+                // Fail silently and retry on next interval as requested
+            }
+        };
+
+        // Poll every 3 seconds
+        const interval = setInterval(fetchBp, 3000);
+        return () => clearInterval(interval);
+    }, [sessionId, isPolling]);
+
+    const handleExport = async () => {
+        setExportError(false);
+        try {
+            const res = await fetch(`http://localhost:8000/api/blueprint/${sessionId}/export`);
+            if (!res.ok) throw new Error("Export failed");
+            const data = await res.json();
+            
+            // Generate PDF using window.jspdf
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            let y = 20;
+            const leftMargin = 20;
+            const maxWidth = 170;
+            
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            const splitTitle = doc.splitTextToSize(`Question: ${initialQuestion || data.question || "Unknown"}`, maxWidth);
+            doc.text(splitTitle, leftMargin, y);
+            y += (splitTitle.length * 7) + 10;
+            
+            doc.setFontSize(12);
+            
+            // Helper to render text with word wrap
+            const renderSection = (title, textLines) => {
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.setFont("helvetica", "bold");
+                doc.text(title, leftMargin, y);
+                y += 7;
+                
+                doc.setFont("helvetica", "normal");
+                textLines.forEach(line => {
+                    if (!line) return;
+                    const splitLine = doc.splitTextToSize(line, maxWidth);
+                    if (y + (splitLine.length * 7) > 280) { doc.addPage(); y = 20; }
+                    doc.text(splitLine, leftMargin, y);
+                    y += (splitLine.length * 7);
+                });
+                y += 10;
+            };
+
+            // Key terms
+            if (data.key_terms?.length) {
+                const termLines = data.key_terms.map(t => `• ${t.term}: ${t.definition || "Not defined"}`);
+                renderSection("Key Terms definitions", termLines);
+            }
+            
+            // Thesis
+            if (data.thesis) {
+                renderSection("Thesis", [data.thesis]);
+            }
+            
+            // Paragraphs
+            if (data.paragraphs?.length) {
+                data.paragraphs.forEach((p, idx) => {
+                    const pLines = [
+                        `Topic Sentence: ${p.topic_sentence || ""}`,
+                        `Point: ${p.point || ""}`,
+                        `Explanation: ${p.explanation || ""}`,
+                        `Example: ${p.example || ""}`,
+                        `Link: ${p.link || ""}`
+                    ];
+                    renderSection(`Paragraph ${idx + 1}: ${p.title || "Argument"}`, pLines);
+                });
+            }
+            
+            // Counter-argument
+            if (data.counter_argument) {
+                renderSection("Counter Argument", [
+                    `Their Claim: ${data.counter_argument.their_claim || ""}`,
+                    `Its Merit: ${data.counter_argument.its_merit || ""}`,
+                    `Student Response: ${data.counter_argument.student_response || ""}`
+                ]);
+            }
+
+            const safeTitle = (initialQuestion || "essay").split(" ").slice(0, 4).join("-").replace(/[^a-zA-Z0-9-]/g, "").toLowerCase();
+            const dateStr = new Date().toISOString().split('T')[0];
+            doc.save(`socra-blueprint-${safeTitle}-${dateStr}.pdf`);
+            
+        } catch (e) {
+            console.error(e);
+            setExportError(true);
+        }
+    };
+
+    if (!blueprint) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center p-12 animate-fade-in">
+                <span className="font-display text-4xl text-textDefault tracking-wide mb-6">Socra</span>
+                <p className="font-mono text-sm text-textMuted uppercase tracking-widest leading-loose">
+                    Your blueprint will build here as you think.
+                </p>
+            </div>
+        );
+    }
+
+    // Prepare arrays up to max length for skeletons
+    const paragraphs = [...(blueprint.paragraphs || [])];
+    while(paragraphs.length < 3) paragraphs.push({});
+    
+    const sq = blueprint.session_quality || {};
+
+    return (
+        <div className="flex flex-col w-full min-h-full pb-32">
+            {/* 1. Header Sticky */}
+            <div className="sticky top-0 bg-[#11100D]/95 backdrop-blur-md z-30 px-8 py-6 border-b border-borderDark/40 flex items-start justify-between">
+                <h2 className="font-serif text-lg leading-relaxed text-textDefault max-w-[90%]">
+                    {initialQuestion || blueprint.question}
+                </h2>
+                {isPolling && (
+                    <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse mt-2 flex-shrink-0 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                )}
+            </div>
+
+            <div className="px-8 py-8 flex flex-col space-y-12">
+                {/* 2. Key Terms */}
+                <div className="flex flex-col space-y-4">
+                    <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Key Terms</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                        {blueprint.key_terms && blueprint.key_terms.length > 0 ? blueprint.key_terms.map((t, idx) => (
+                            <div key={idx} className={`p-4 border ${t.definition ? 'border-borderDark bg-background/30' : 'border-borderDark/20 bg-transparent'} transition-all animate-fade-in`}>
+                                <div className="font-display text-textDefault mb-2">{t.term}</div>
+                                {t.definition ? (
+                                    <div className="font-mono text-sm text-textMuted leading-relaxed animate-fade-in">{t.definition}</div>
+                                ) : (
+                                    <div className="font-mono text-xs text-textMuted/40 italic">Waiting for definition...</div>
+                                )}
+                            </div>
+                        )) : (
+                            <div className="font-mono text-xs text-textMuted/40 italic">Identifying loaded terms...</div>
+                        )}
+                    </div>
+                </div>
+
+                {/* 3. Thesis */}
+                <div className="flex flex-col space-y-4">
+                    <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Thesis</h3>
+                    <div className="p-6 border border-amber/30 bg-amber/5">
+                        {blueprint.thesis ? (
+                            <div className="font-serif text-xl leading-relaxed text-amber animate-fade-in">{blueprint.thesis}</div>
+                        ) : (
+                            <div className="font-serif text-lg text-amber/40 animate-pulse italic">Thesis forming...</div>
+                        )}
+                    </div>
+                </div>
+
+                {/* 4. Paragraph Skeletons */}
+                <div className="flex flex-col space-y-6">
+                    <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Paragraph Skeletons</h3>
+                    {paragraphs.map((p, idx) => (
+                        <div key={idx} className="flex flex-col border border-borderDark/40 bg-background/20 overflow-hidden">
+                            <div className="bg-borderDark/20 px-4 py-2 font-mono text-xs text-textMuted uppercase tracking-wider">
+                                Argument {idx + 1} {p.title ? `- ${p.title}` : ''}
+                            </div>
+                            <div className="p-4 flex flex-col space-y-4 font-mono text-sm">
+                                {/* Topic Sentence */}
+                                <div className="pl-4 border-l-2 border-green-500/70">
+                                    <span className="text-xs uppercase text-green-500/70 block mb-1">Topic Sentence</span>
+                                    {p.topic_sentence ? <span className="text-textDefault animate-fade-in">{p.topic_sentence}</span> : <div className="h-4 bg-borderDark/20 w-3/4 rounded animate-pulse"></div>}
+                                </div>
+                                {/* Point */}
+                                <div className="pl-4 border-l-2 border-borderDark/40">
+                                    <span className="text-xs uppercase text-textMuted block mb-1">Point / Premise</span>
+                                    {p.point ? <span className="text-textDefault animate-fade-in">{p.point}</span> : <div className="h-4 bg-borderDark/20 w-1/2 rounded pb-1"></div>}
+                                </div>
+                                {/* Explanation */}
+                                <div className="pl-4 border-l-2 border-borderDark/40">
+                                    <span className="text-xs uppercase text-textMuted block mb-1">Explanation</span>
+                                    {p.explanation ? <span className="text-textDefault animate-fade-in">{p.explanation}</span> : <div className="h-4 bg-borderDark/20 w-full rounded pb-1"></div>}
+                                </div>
+                                {/* Example */}
+                                <div className="pl-4 border-l-2 border-borderDark/40">
+                                    <span className="text-xs uppercase text-textMuted block mb-1">Evidence / Example</span>
+                                    {p.example ? <span className="text-textDefault animate-fade-in">{p.example}</span> : <div className="h-4 bg-borderDark/20 w-2/3 rounded pb-1"></div>}
+                                </div>
+                                {/* Link */}
+                                <div className="pl-4 border-l-2 border-purple-500/70">
+                                    <span className="text-xs uppercase text-purple-500/70 block mb-1">Analytical Link</span>
+                                    {p.link ? <span className="text-textDefault animate-fade-in">{p.link}</span> : <div className="h-4 bg-borderDark/20 w-5/6 rounded animate-pulse"></div>}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* 5. Counter-argument */}
+                <div className="flex flex-col space-y-4">
+                    <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Counter Argument</h3>
+                    <div className="flex flex-col border border-borderDark/40 bg-background/20 p-4 space-y-4 font-mono text-sm">
+                        <div className="pl-4 border-l-2 border-red-500/50">
+                            <span className="text-xs uppercase text-red-500/50 block mb-1">Their Claim</span>
+                            {blueprint.counter_argument?.their_claim ? <span className="text-textDefault animate-fade-in">{blueprint.counter_argument.their_claim}</span> : <div className="h-4 bg-borderDark/20 w-3/4 rounded"></div>}
+                        </div>
+                        <div className="pl-4 border-l-2 border-red-400/30">
+                            <span className="text-xs uppercase text-textMuted block mb-1">Its Merit</span>
+                            {blueprint.counter_argument?.its_merit ? <span className="text-textDefault animate-fade-in">{blueprint.counter_argument.its_merit}</span> : <div className="h-4 bg-borderDark/20 w-1/2 rounded"></div>}
+                        </div>
+                        <div className="pl-4 border-l-2 border-amber/50">
+                            <span className="text-xs uppercase text-amber/50 block mb-1">Your Response</span>
+                            {blueprint.counter_argument?.student_response ? <span className="text-textDefault animate-fade-in">{blueprint.counter_argument.student_response}</span> : <div className="h-4 bg-borderDark/20 w-full rounded"></div>}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 6. Conclusion Prompts */}
+                <div className="flex flex-col space-y-4">
+                    <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Conclusion Prompts</h3>
+                    <div className="grid grid-cols-1 gap-3">
+                        {blueprint.conclusion_prompts?.map((prompt, idx) => (
+                            <div key={idx} className="p-3 bg-background/30 border border-borderDark/30 text-textDefault font-serif italic text-sm">
+                                {prompt}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 7. Examiner Checklist */}
+                <div className="flex flex-col space-y-4">
+                    <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Examiner Checklist</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {localChecklist.map((item, idx) => (
+                            <button 
+                                key={idx} 
+                                onClick={() => toggleChecklist(idx)}
+                                className={`flex items-center space-x-3 p-3 text-left border transition-colors ${item.completed ? 'border-green-500/30 bg-green-500/5 text-green-500' : 'border-borderDark/30 hover:border-borderDark text-textMuted'}`}
+                            >
+                                <div className={`w-4 h-4 rounded-sm flex items-center justify-center border ${item.completed ? 'border-green-500 bg-green-500 text-background' : 'border-borderDark/50'}`}>
+                                    {item.completed && <span className="text-[10px]">✓</span>}
+                                </div>
+                                <span className="font-mono text-xs tracking-wider">{item.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 8. Session Quality Pill Row */}
+                <div className="flex flex-wrap gap-2 pt-4 border-t border-borderDark/20">
+                    <span className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest rounded ${sq.question_autopsy_complete ? 'bg-green-500/20 text-green-400' : 'bg-borderDark/20 text-textMuted'}`}>
+                        Autopsy
+                    </span>
+                    <span className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest rounded ${sq.thesis_refined ? 'bg-green-500/20 text-green-400' : 'bg-borderDark/20 text-textMuted'}`}>
+                        Refined Thesis
+                    </span>
+                    <span className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest rounded ${sq.both_sides_argued ? 'bg-green-500/20 text-green-400' : 'bg-borderDark/20 text-textMuted'}`}>
+                        Balanced
+                    </span>
+                    <span className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest rounded ${(sq.analytical_links_count || 0) >= 3 ? 'bg-green-500/20 text-green-400' : 'bg-borderDark/20 text-textMuted'}`}>
+                        Links: {sq.analytical_links_count || 0} / 3
+                    </span>
+                </div>
+            </div>
+
+            {/* Download Button Header */}
+            <div className="fixed bottom-0 right-0 w-full md:w-[45%] bg-[#11100D]/95 backdrop-blur-md border-t border-borderDark/40 p-6 z-30">
+                <button 
+                    onClick={handleExport}
+                    className="w-full py-4 bg-textDefault text-background font-display uppercase tracking-widest hover:bg-amber transition-colors flex flex-col items-center justify-center"
+                >
+                    <span>Download Blueprint</span>
+                </button>
+                {exportError && <div className="text-center mt-2 text-red-500 font-mono text-xs animate-fade-in">Export failed — please try again.</div>}
+            </div>
+        </div>
+    );
+}
+

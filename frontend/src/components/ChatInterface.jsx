@@ -1,22 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from '../context/SessionContext';
-import ArgumentMap from './ArgumentMap';
 import FinalBlueprint from './FinalBlueprint';
+import BlueprintPanel from './learn/BlueprintPanel';
 import NudgeButton from './NudgeButton';
-import InsightTag from './InsightTag';
-
-const QuestionScoreBar = ({ score }) => {
-    return (
-        <div className="flex flex-col mb-8">
-            <span className="text-xs font-mono uppercase text-textMuted tracking-wider mb-2">Depth of Inquiry</span>
-            <div className="flex items-baseline space-x-2">
-                <span className="font-display text-6xl text-amber leading-none score-number transition-all duration-500">{score || '-'}</span>
-                <span className="font-mono text-sm text-textMuted uppercase">/ 10</span>
-            </div>
-        </div>
-    );
-};
-
 
 const MessageBubble = ({ role, content }) => {
     const isAI = role === 'assistant';
@@ -56,17 +42,14 @@ const getPhaseBanner = (phaseNum) => {
 export default function ChatInterface({ sessionId, initialQuestion, initialMessage }) {
     const { reaction } = useSession();
     
-    const [messages, setMessages] = useState([
-        { role: 'assistant', content: initialMessage }
-    ]);
+    const [messages, setMessages] = useState(
+        initialMessage ? [{ role: 'assistant', content: initialMessage }] : []
+    );
     const [input, setInput] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
 
     // Metadata states - start at phase 2 if reaction was provided
     const [phase, setPhase] = useState(reaction ? 2 : 1);
-    const [score, setScore] = useState(0);
-    const [insights, setInsights] = useState([]);
-    const [lazyWarning, setLazyWarning] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
 
     // Living Blueprint states
@@ -80,16 +63,8 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isStreaming]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!input.trim() || isStreaming) return;
-
-        const userMsg = input.trim();
-        setInput('');
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    const handleStream = async (userMsg) => {
         setIsStreaming(true);
-        setLazyWarning(false); // reset warning on new message
-
         try {
             // Create empty assistant message placeholder to stream into
             setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
@@ -104,15 +79,18 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
             const decoder = new TextDecoder();
 
             let currentTurnOutput = '';
+            let sseBuffer = '';
+            let currentEvent = null;
 
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
 
                 const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
-
-                let currentEvent = null;
+                sseBuffer += chunk;
+                
+                const lines = sseBuffer.split('\n');
+                sseBuffer = lines.pop();
 
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i];
@@ -128,11 +106,6 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                             try {
                                 if (dataStr && dataStr !== '{}') {
                                     const meta = JSON.parse(dataStr);
-                                    if (meta.question_score) setScore(meta.question_score);
-                                    if (meta.insight_unlocked && !insights.includes(meta.insight_unlocked)) {
-                                        setInsights(prev => [...prev, meta.insight_unlocked]);
-                                    }
-                                    if (meta.lazy_example) setLazyWarning(true);
                                     if (meta.current_phase) {
                                         if (meta.current_phase > phase && meta.current_phase <= 5) {
                                             setPhase(meta.current_phase);
@@ -143,9 +116,6 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                             setIsFinished(true); // Trigger payoff screen
                                         }
                                     }
-                                    if (meta.blueprint) setBlueprint(meta.blueprint);
-                                    if (meta.tension_axis) setTension(meta.tension_axis);
-                                    if (meta.evidence) setEvidence(meta.evidence);
                                 }
                             } catch (e) {
                                 console.error("Metadata parse error", e);
@@ -190,10 +160,27 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
         }
     };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!input.trim() || isStreaming) return;
+
+        const userMsg = input.trim();
+        setInput('');
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        
+        await handleStream(userMsg);
+    };
+
+    useEffect(() => {
+        if (!initialMessage && messages.length === 0 && !isStreaming) {
+            handleStream("");
+        }
+    }, [initialMessage, messages.length, isStreaming]);
+
     return (
-        <div className="flex h-screen w-full relative z-10">
-            {/* 65% Conversation Area */}
-            <div className="w-[65%] h-full flex flex-col border-r border-borderDark/40">
+        <div className="flex h-screen w-full relative z-10 flex-col md:flex-row">
+            {/* 55% Conversation Area */}
+            <div className="w-full md:w-[55%] h-[50vh] md:h-full flex flex-col border-r-0 md:border-r border-b md:border-b-0 border-borderDark/40 relative overflow-hidden">
 
                 {/* Top bar minimal */}
                 <div className="h-16 flex items-center px-8 border-b border-borderDark/20 bg-background/90 backdrop-blur-sm z-20">
@@ -230,7 +217,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                 </div>
 
                 {/* Input Area */}
-                <div className="absolute bottom-0 left-0 w-[65%] bg-gradient-to-t from-background via-background to-transparent pt-12 pb-8 px-8 z-20">
+                <div className="absolute bottom-0 left-0 w-full md:w-[55%] bg-gradient-to-t from-background via-background to-transparent pt-12 pb-8 px-8 z-20">
                     <form onSubmit={handleSubmit} className="relative group max-w-3xl mx-auto">
                         <textarea
                             value={input}
@@ -258,35 +245,13 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                 </div>
             </div>
 
-            {/* 35% Thinking Panel */}
-            <div className="w-[35%] h-full bg-[#11100D] p-10 flex flex-col overflow-y-auto z-20">
-                <ArgumentMap currentPhase={phase} blueprint={blueprint} tension={tension} evidence={evidence} />
-
-                <div className="my-8 w-full h-[1px] bg-borderDark/30"></div>
-
-                <QuestionScoreBar score={score} />
-
-                {lazyWarning && (
-                    <div className="mb-8 p-4 border border-amber/30 bg-amber/5 text-amber text-xs font-mono flex items-start animate-fade-in">
-                        <span className="mr-2 mt-[1px]">⚠</span>
-                        <span>Consider a more specific example. Broad assertions lack analytical rigor.</span>
-                    </div>
-                )}
-
-                {insights.length > 0 && (
-                    <div className="mt-8 flex flex-col">
-                        <span className="text-xs font-mono uppercase text-textMuted tracking-wider mb-4">Perspectives Introduced</span>
-                        <div className="flex flex-col space-y-3 items-start">
-                            {insights.map((insight, idx) => (
-                                <InsightTag key={idx} insight={insight} />
-                            ))}
-                        </div>
-                    </div>
-                )}
+            {/* 45% Blueprint Panel */}
+            <div className="w-full md:w-[45%] h-[50vh] md:h-full bg-[#11100D] flex flex-col relative overflow-y-auto overflow-x-hidden z-20">
+                <BlueprintPanel sessionId={sessionId} initialQuestion={initialQuestion} />
             </div>
 
             {/* Final Payoff Overlay */}
-            {isFinished && <FinalBlueprint insights={insights} blueprint={blueprint} />}
+            {isFinished && <FinalBlueprint />}
         </div>
     );
 }

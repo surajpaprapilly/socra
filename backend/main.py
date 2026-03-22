@@ -4,6 +4,7 @@ import uuid
 import anthropic
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
+import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any
 from dotenv import load_dotenv
@@ -12,10 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from ai import SocraAI
-from models import StartSessionRequest, StartSessionResponse, ChatMessageRequest, SessionTranscriptResponse, NudgeRequest, NudgeResponse
+from models import StartSessionRequest, StartSessionResponse, ChatMessageRequest, SessionTranscriptResponse, NudgeRequest, NudgeResponse, BlueprintModel
 from learn_routes import router as learn_router
 from bank_routes import router as bank_router
-from blueprint_routes import router as blueprint_router
+from blueprint_routes import router as blueprint_router, patch_blueprint, blueprints
 
 app = FastAPI(title="Socra API")
 
@@ -48,12 +49,8 @@ async def start_session(request: StartSessionRequest):
     session_id = str(uuid.uuid4())
     
     # Store initial state 
-    if request.reaction:
-        dummy_user_msg = f"I am ready to explore this question. My gut reaction to this statement is: I {request.reaction}. Please dive into analyzing my perspective without asking for my initial stance again."
-        session_turn = 2
-    else:
-        dummy_user_msg = "I am ready to explore this question. Since you already know what the question is, please directly ask me for my gut reaction."
-        session_turn = 1
+    dummy_user_msg = f"My General Paper question is: '{request.question}'. Let's begin the Question Autopsy."
+    session_turn = 1
 
     sessions[session_id] = {
         "question": request.question,
@@ -61,15 +58,75 @@ async def start_session(request: StartSessionRequest):
         "turn": session_turn
     }
     
-    # Generate the first Socratic response
-    first_response_text = await ai_handler.generate_initial_response(request.question, request.reaction)
+    # Initialize the empty blueprint
+    blueprints[session_id] = BlueprintModel(question=request.question)
     
-    sessions[session_id]["messages"].append({"role": "assistant", "content": first_response_text})
+    # Get initial message from AI synchronously
+    initial_ai_response = await ai_handler.get_initial_chat_response(request.question, sessions[session_id]["messages"])
+    
+    # Store AI response in history
+    sessions[session_id]["messages"].append({"role": "assistant", "content": initial_ai_response})
     
     return StartSessionResponse(
         session_id=session_id,
-        first_message=first_response_text
+        first_message=initial_ai_response
     )
+
+async def run_blueprint_extraction(session_id: str):
+    if session_id not in sessions or session_id not in blueprints:
+        return
+        
+    session = sessions[session_id]
+    messages = session["messages"]
+    current_blueprint = blueprints[session_id].model_dump()
+    
+    # Extract patch
+    print("Running blueprint extraction...")
+    patch_data = await ai_handler.extract_blueprint_patch(messages, current_blueprint)
+    print(f"Extracted patch data: {patch_data}")
+    if not patch_data:
+        print("No patch data extracted.")
+        return
+        
+    old_thesis = current_blueprint.get("thesis")
+    old_links = sum(1 for p in current_blueprint.get("paragraphs", []) if p.get("link"))
+    
+    try:
+        updated_model = await patch_blueprint(session_id, patch_data)
+        updated_bp = updated_model.model_dump()
+    except Exception as e:
+        print(f"Failed to apply expected patch data: {patch_data}\nError: {e}")
+        return
+    
+    sq = updated_bp["session_quality"]
+    needs_update = False
+    
+    # Flags logic
+    terms = updated_bp.get("key_terms", [])
+    if terms and all(t.get("definition") for t in terms):
+        if not sq["question_autopsy_complete"]:
+            sq["question_autopsy_complete"] = True
+            needs_update = True
+            
+    ca = updated_bp.get("counter_argument")
+    if ca and ca.get("their_claim"):
+        if not sq["both_sides_argued"]:
+            sq["both_sides_argued"] = True
+            needs_update = True
+            
+    if patch_data.get("thesis") and patch_data["thesis"] != old_thesis and old_thesis is not None:
+        if not sq["thesis_refined"]:
+            sq["thesis_refined"] = True
+            needs_update = True
+            
+    new_links = sum(1 for p in updated_bp.get("paragraphs", []) if p.get("link"))
+    if new_links > old_links:
+        sq["analytical_links_count"] += (new_links - old_links)
+        needs_update = True
+        
+    if needs_update:
+        print(f"Updating session_quality constraints... {sq}")
+        await patch_blueprint(session_id, {"session_quality": sq})
 
 @app.post("/api/session/chat")
 async def chat_session(request: ChatMessageRequest):
@@ -77,10 +134,14 @@ async def chat_session(request: ChatMessageRequest):
         raise HTTPException(status_code=404, detail="Session not found")
         
     session = sessions[request.session_id]
-    session["messages"].append({"role": "user", "content": request.message})
+    
+    # If the message is empty, we are just continuing the generation (e.g. initial streaming response)
+    # Anthropic requires alternating user/assistant roles, so we don't append empty user messages
+    if request.message.strip():
+        session["messages"].append({"role": "user", "content": request.message})
     
     # Create the generator for streaming
-    generator = ai_handler.stream_chat_response(session["question"], session["messages"], session["turn"])
+    generator = ai_handler.stream_chat_response(session["question"], session["messages"])
     
     # We need a wrapper generator to capture the final full text
     # and append it to the session history so the next turn remembers it
@@ -119,6 +180,8 @@ async def chat_session(request: ChatMessageRequest):
         # After streaming is fully complete, save the gathered AI response to memory
         if full_response:
             session["messages"].append({"role": "assistant", "content": full_response})
+            # Run extraction in the background
+            asyncio.create_task(run_blueprint_extraction(request.session_id))
 
     return StreamingResponse(
         chat_wrapper(),
@@ -134,7 +197,7 @@ async def get_nudge(request: NudgeRequest):
     
     # Do not append the nudge request to conversation history 
     # so Claude doesn't get confused by phantom messages on the next real turn
-    nudge_text = await ai_handler.generate_nudge(session["question"], session["messages"], session["turn"])
+    nudge_text = await ai_handler.generate_nudge(session["question"], session["messages"])
     
     return NudgeResponse(nudge=nudge_text)
 
