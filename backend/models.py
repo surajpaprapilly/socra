@@ -109,3 +109,51 @@ class SessionTranscriptResponse(BaseModel):
     messages: List[ChatMessageBase]
     current_turn: int
     metadata: ChatTurnMetadata
+
+class KeyTerm(BaseModel):
+    term: Optional[str] = None
+    definition: Optional[str] = None
+
+class Paragraph(BaseModel):
+    title: Optional[str] = None
+    topic_sentence: Optional[str] = None
+    point: Optional[str] = None
+    explanation: Optional[str] = None
+    example: Optional[str] = None
+    link: Optional[str] = None
+
+class CounterArgument(BaseModel):
+    their_claim: Optional[str] = None
+    its_merit: Optional[str] = None
+    student_response: Optional[str] = None
+
+class ChecklistItem(BaseModel):
+    label: str
+    completed: bool = False
+
+class SessionQuality(BaseModel):
+    question_autopsy_complete: bool = False
+    both_sides_argued: bool = False
+    thesis_refined: bool = False
+    analytical_links_count: int = 0
+
+class BlueprintModel(BaseModel):
+    question: str
+    key_terms: List[KeyTerm] = []
+    thesis: Optional[str] = None
+    paragraphs: List[Paragraph] = []
+    counter_argument: Optional[CounterArgument] = None
+    conclusion_prompts: List[str] = [
+        "What is the final synthesis or ultimate insight?",
+        "Why does this position ultimately override the opposing view?",
+        "What is the broader implication for society or the future?"
+    ]
+    checklist: List[ChecklistItem] = [
+        ChecklistItem(label="Define key terms"),
+        ChecklistItem(label="Establish clear thesis"),
+        ChecklistItem(label="First supporting argument"),
+        ChecklistItem(label="Second supporting argument"),
+        ChecklistItem(label="Address counter-argument"),
+        ChecklistItem(label="Synthesize conclusion")
+    ]
+    session_quality: SessionQuality = SessionQuality()

@@ -2,8 +2,7 @@ export default function StageIndicator({ currentStage }) {
     // currentStage = 1, 2, or 3
     const stages = [
         { id: 1, label: "READ" },
-        { id: 2, label: "SUMMARISE" },
-        { id: 3, label: "BANK" }
+        { id: 2, label: "TEST" }
     ];
 
     const getIcon = (stageId) => {

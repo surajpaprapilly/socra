@@ -3,20 +3,8 @@ import { useNavigate } from 'react-router-dom';
 export default function BankTransition({ question }) {
     const navigate = useNavigate();
 
-    const handleStartTest = async () => {
-        try {
-            const response = await fetch('http://localhost:8000/api/session/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question })
-            });
-            if (!response.ok) throw new Error("Failed to start session");
-            const data = await response.json();
-            navigate(`/test/${data.session_id}`);
-        } catch (error) {
-            console.error(error);
-            alert("Failed to start Test Mode.");
-        }
+    const handleStartTest = () => {
+        navigate('/test/init', { state: { question } });
     };
 
     return (
@@ -27,12 +15,12 @@ export default function BankTransition({ question }) {
                 </div>
 
                 <h2 className="font-display text-4xl text-textDefault">
-                    Added to your Knowledge Bank
+                    Ready to Test
                 </h2>
 
                 <p className="font-serif text-lg text-textMuted leading-relaxed">
-                    You've read. You've synthesised.<br />
-                    <span className="text-amber">Now let's see if you can defend it.</span>
+                    You've read the perspectives.<br />
+                    <span className="text-amber">Now let's see if you can defend your views.</span>
                 </p>
 
                 <div className="flex flex-col md:flex-row gap-6 justify-center pt-8">
@@ -43,12 +31,7 @@ export default function BankTransition({ question }) {
                         [ Enter Test Mode with this question → ]
                     </button>
 
-                    <button
-                        onClick={() => navigate('/bank')}
-                        className="px-8 py-4 bg-transparent border border-borderDark text-textMuted font-mono tracking-widest uppercase text-xs transition-all duration-300 hover:border-textMuted hover:text-textDefault focus:outline-none"
-                    >
-                        Go to Knowledge Bank →
-                    </button>
+
                 </div>
             </div>
         </div>

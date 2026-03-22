@@ -5,8 +5,7 @@ import LandingScreen from './components/LandingScreen'; // Kept for reference bu
 import ThemeSelection from './components/ThemeSelection';
 import ConflictSelection from './components/conflicts/ConflictSelection';
 import ConflictReading from './components/conflicts/ConflictReading';
-import ConnectionCanvas from './components/canvas/ConnectionCanvas';
-import CanvasTransition from './components/canvas/CanvasTransition';
+
 import ModeChoice from './components/ModeChoice';
 import ChatInterface from './components/ChatInterface';
 import NavBar from './components/NavBar';
@@ -75,8 +74,7 @@ function AppRoutes() {
         <Route path="/" element={<ThemeSelection />} />
         <Route path="/conflicts/:themeId" element={<ConflictSelection />} />
         <Route path="/conflict/:conflictId/read" element={<ConflictReading />} />
-        <Route path="/conflict/:conflictId/canvas" element={<ConnectionCanvas />} />
-        <Route path="/conflict/:conflictId/transition" element={<CanvasTransition />} />
+
         <Route path="/mode" element={<ModeChoice />} />
 
         {/* Existing /learn - we kept the same route, LearnMode will parse Context */}

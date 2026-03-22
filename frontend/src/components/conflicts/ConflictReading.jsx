@@ -15,7 +15,6 @@ export default function ConflictReading() {
 
     const [readings, setReadings] = useState({ side_a: [], side_b: [], singapore: [] });
     const [completedUrls, setCompletedUrls] = useState(new Set());
-    const [articleNotes, setArticleNotes] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -65,10 +64,6 @@ export default function ConflictReading() {
         return <div className="p-8 text-amber font-mono text-center">Conflict not found.</div>;
     }
 
-    const handleNotesUpdate = (url, notes) => {
-        setArticleNotes(prev => ({ ...prev, [url]: notes }));
-    };
-
     const handleMarkDone = (url) => {
         const newCompleted = new Set(completedUrls);
         newCompleted.add(url);
@@ -77,24 +72,7 @@ export default function ConflictReading() {
 
     const handleContinue = () => {
         if (completedUrls.size >= 1) {
-            // Flatten all articles
-            const allArticles = [...readings.side_a, ...readings.side_b, ...readings.singapore];
-            const selectedReadings = allArticles.filter(r => completedUrls.has(r.url));
-            
-            const finalNotes = selectedReadings
-                .map(r => articleNotes[r.url] || null)
-                .filter(n => n !== null && (n.free_notes || n.highlights.length > 0));
-
-            // Update session with canvas data prep
-            setSession({
-                conflictId: conflict.id,
-                sideA: conflict.sideA,
-                sideB: conflict.sideB,
-                readings: selectedReadings,
-                notes: finalNotes
-            });
-
-            navigate(`/conflict/${conflict.id}/canvas`);
+            navigate('/test/init', { state: { question: conflict.title } });
         }
     };
 
@@ -167,11 +145,8 @@ export default function ConflictReading() {
                             <ArticleTile
                                 key={`a-${idx}`}
                                 reading={reading}
-                                question={conflict.title}
-                                delay={idx * 80}
-                                initialNotes={articleNotes[reading.url]}
-                                onNotesUpdate={(url, notes) => handleNotesUpdate(url, notes)}
                                 onMarkDone={() => handleMarkDone(reading.url)}
+                                delay={idx * 80}
                             />
                         ))}
                     </div>
@@ -188,11 +163,8 @@ export default function ConflictReading() {
                             <ArticleTile
                                 key={`b-${idx}`}
                                 reading={reading}
-                                question={conflict.title}
-                                delay={idx * 80 + 200}
-                                initialNotes={articleNotes[reading.url]}
-                                onNotesUpdate={(url, notes) => handleNotesUpdate(url, notes)}
                                 onMarkDone={() => handleMarkDone(reading.url)}
+                                delay={idx * 80 + 200}
                             />
                         ))}
                     </div>
@@ -215,11 +187,8 @@ export default function ConflictReading() {
                                 <div key={`sg-${idx}`} className="w-full">
                                     <ArticleTile
                                         reading={reading}
-                                        question={conflict.title}
-                                        delay={idx * 80}
-                                        initialNotes={articleNotes[reading.url]}
-                                        onNotesUpdate={(url, notes) => handleNotesUpdate(url, notes)}
                                         onMarkDone={() => handleMarkDone(reading.url)}
+                                        delay={idx * 80}
                                     />
                                 </div>
                             ))}
@@ -240,7 +209,7 @@ export default function ConflictReading() {
                             }
                         `}
                     >
-                        I've read enough — show me the Canvas →
+                        I've read enough — proceed to GP Gym →
                     </button>
                 </div>
                 

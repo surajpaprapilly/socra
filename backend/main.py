@@ -15,6 +15,7 @@ from ai import SocraAI
 from models import StartSessionRequest, StartSessionResponse, ChatMessageRequest, SessionTranscriptResponse, NudgeRequest, NudgeResponse
 from learn_routes import router as learn_router
 from bank_routes import router as bank_router
+from blueprint_routes import router as blueprint_router
 
 app = FastAPI(title="Socra API")
 
@@ -33,6 +34,7 @@ app.add_middleware(
 
 app.include_router(learn_router, prefix="/api/learn")
 app.include_router(bank_router, prefix="/api/bank")
+app.include_router(blueprint_router, prefix="/api/blueprint")
 
 # In-memory session store
 sessions: Dict[str, Dict[str, Any]] = {}

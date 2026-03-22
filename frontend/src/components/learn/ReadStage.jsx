@@ -4,7 +4,6 @@ import ArticleTile from './ArticleTile';
 export default function ReadStage({ question, onComplete }) {
     const [readings, setReadings] = useState([]);
     const [completedUrls, setCompletedUrls] = useState(new Set());
-    const [articleNotes, setArticleNotes] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -38,10 +37,6 @@ export default function ReadStage({ question, onComplete }) {
         return () => { isMounted = false; };
     }, [question]);
 
-    const handleNotesUpdate = (url, notes) => {
-        setArticleNotes(prev => ({ ...prev, [url]: notes }));
-    };
-
     const handleMarkDone = (url) => {
         const newCompleted = new Set(completedUrls);
         newCompleted.add(url);
@@ -50,12 +45,7 @@ export default function ReadStage({ question, onComplete }) {
 
     const handleContinue = () => {
         if (completedUrls.size >= 2) {
-            const selectedReadings = readings.filter(r => completedUrls.has(r.url));
-            const finalNotes = selectedReadings
-                .map(r => articleNotes[r.url] || null)
-                .filter(n => n !== null && (n.free_notes || n.highlights.length > 0));
-
-            onComplete(selectedReadings, finalNotes);
+            onComplete();
         }
     };
 
@@ -97,11 +87,8 @@ export default function ReadStage({ question, onComplete }) {
                         <ArticleTile
                             key={idx}
                             reading={reading}
-                            question={question}
-                            delay={idx * 80}
-                            initialNotes={articleNotes[reading.url]}
-                            onNotesUpdate={(url, notes) => handleNotesUpdate(url, notes)}
                             onMarkDone={() => handleMarkDone(reading.url)}
+                            delay={idx * 80}
                         />
                     ))}
                 </div>
@@ -118,7 +105,7 @@ export default function ReadStage({ question, onComplete }) {
                             }
                         `}
                     >
-                        I've read enough. Now I'll summarise. →
+                        I've read enough. Proceed to GP Gym →
                     </button>
                 </div>
             </div>
