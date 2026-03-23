@@ -4,6 +4,10 @@ import FinalBlueprint from './FinalBlueprint';
 import BlueprintPanel from './learn/BlueprintPanel';
 import NudgeButton from './NudgeButton';
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+
 const MessageBubble = ({ role, content }) => {
     const isAI = role === 'assistant';
 
@@ -13,8 +17,13 @@ const MessageBubble = ({ role, content }) => {
                 <div className="mr-4 mt-1 flex-shrink-0">
                     <span className="text-amber text-xs animate-pulse">◆</span>
                 </div>
-                <div className="font-serif text-lg leading-relaxed text-textDefault pr-12 max-w-2xl whitespace-pre-wrap">
-                    {content}
+                <div className="prose prose-invert max-w-none font-serif text-lg">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}components={{
+                            hr: () => null
+                        }}
+                    >
+                        {content}
+                    </ReactMarkdown>
                 </div>
             </div>
         );
@@ -217,8 +226,8 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                 </div>
 
                 {/* Input Area */}
-                <div className="absolute bottom-0 left-0 w-full md:w-[55%] bg-gradient-to-t from-background via-background to-transparent pt-12 pb-8 px-8 z-20">
-                    <form onSubmit={handleSubmit} className="relative group max-w-3xl mx-auto">
+                    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-background via-background to-transparent pt-12 pb-8 px-8 z-20">
+                    <form onSubmit={handleSubmit} className="relative group w-full xl:max-w-4xl">
                         <textarea
                             value={input}
                             onChange={(e) => setInput(e.target.value)}

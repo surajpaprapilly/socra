@@ -49,7 +49,7 @@ async def start_session(request: StartSessionRequest):
     session_id = str(uuid.uuid4())
     
     # Store initial state 
-    dummy_user_msg = f"My General Paper question is: '{request.question}'. Let's begin the Question Autopsy."
+    dummy_user_msg = f"The General Paper question is: '{request.question}'. Begin your conversation with the student. Give a short welcome and get to unpacking the first word."
     session_turn = 1
 
     sessions[session_id] = {
