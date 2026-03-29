@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socra — The GP Tutor That Asks, Not Answers</title>
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Socra — The GP Tutor That Asks, Not Answers">
+    <meta property="og:description" content="Build exam-ready thinking through Socratic dialogue. For Singapore A-Level General Paper.">
+    <meta property="og:image" content="/og-image.png">
+    
+    <!-- Font Imports -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <style>
+        /* Base Variables */
+        :root {
+            --bg-base: #0a0a0f;
+            --text-main: #f0ede8;
+            --text-muted: rgba(240, 237, 232, 0.7);
+            --accent-gold: #c9a84c;
+            --border-subtle: rgba(255, 255, 255, 0.15);
+            --nav-bg: rgba(10, 10, 15, 0.9);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --element-spacing: 60ms;
+        }
+
+        /* Reset & Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'DM Sans', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, .playfair {
+            font-family: 'Playfair Display', serif;
+            font-weight: 400;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 200ms ease;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 200ms ease;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-gold);
+            color: var(--bg-base);
+            border: 1px solid var(--accent-gold);
+        }
+        .btn-primary:hover {
+            background-color: transparent;
+            color: var(--accent-gold);
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: var(--text-main);
+            border: 1px solid transparent;
+        }
+        .btn-ghost.gold-border {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+        .btn-ghost:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .btn-ghost.gold-border:hover {
+            background-color: rgba(201, 168, 76, 0.1);
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        section {
+            padding: 8rem 0;
+            position: relative;
+        }
+
+        /* Reveal Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 800ms ease, transform 800ms ease;
+        }
+        .reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 1. Navigation */
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            z-index: 100;
+            background-color: transparent;
+            border-bottom: 1px solid transparent;
+            transition: background-color 300ms ease, border-color 300ms ease, padding 300ms ease;
+        }
+        .nav-header.scrolled {
+            background-color: var(--nav-bg);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 1rem 2rem;
+            backdrop-filter: blur(10px);
+        }
+        .nav-logo {
+            font-size: 1.75rem;
+            color: var(--accent-gold);
+            font-style: italic;
+        }
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* 2. Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            background: radial-gradient(circle at center, rgba(30, 30, 40, 0.4) 0%, transparent 60%);
+        }
+        /* Dot grid overlay */
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+            background-size: 24px 24px;
+            opacity: 0.04;
+            pointer-events: none;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+        }
+        .hero-overline {
+            font-feature-settings: "smcp" 1;
+            text-transform: lowercase; /* fallback if smcp fails */
+            font-variant: small-caps;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+        .hero-title {
+            font-size: clamp(3rem, 5vw, 5rem);
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+        .hero-title .asks {
+            font-style: italic;
+            color: var(--accent-gold);
+        }
+        .hero-subtitle {
+            font-size: 1.125rem;
+            color: var(--text-main); /* Warm off-white */
+            max-width: 520px;
+            margin: 0 auto 3rem auto;
+            opacity: 0.9;
+        }
+        .hero-ctas {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        /* Section Headings */
+        .section-title {
+            font-size: 2.5rem;
+            margin-bottom: 4rem;
+            text-align: center;
+        }
+
+        /* 3. Honest Differentiator */
+        .diff-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .diff-card {
+            border: 1px solid var(--card-border);
+            padding: 3rem 2rem;
+            transition: border-color 200ms ease;
+            background: transparent;
+        }
+        .diff-card:hover {
+            border-color: rgba(201, 168, 76, 0.3);
+        }
+        .diff-icon {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 1.5rem;
+            color: var(--text-main); /* or gold? Let's keep it simple: gold for emphasis, off-white for structural SVGs or simple strokes */
+        }
+        .diff-card-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+        .diff-card-body {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* 4. How It Works */
+        .phases-container {
+            position: relative;
+            margin-top: 4rem;
+        }
+        /* The connecting gold line */
+        .phases-line {
+            position: absolute;
+            top: 24px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: var(--accent-gold);
+            opacity: 0.3;
+            z-index: 0;
+        }
+        .phases-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        .phase-step {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .phase-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--bg-base);
+            border: 2px solid var(--accent-gold);
+            border-radius: 50%;
+            margin-bottom: 2rem;
+            position: relative;
+            transform: translateY(-5.5px); /* Align perfectly with line */
+        }
+        .phase-number {
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        .phase-title {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .phase-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* 5. Live Demo */
+        .demo-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+        }
+        /* Chat Box */
+        .demo-chat {
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.02);
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+            font-size: 1.1rem;
+            color: var(--accent-gold);
+            line-height: 1.4;
+            background: rgba(0,0,0,0.2);
+        }
+        .chat-body {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        /* Hide scrollbar */
+        .chat-body::-webkit-scrollbar { width: 4px; }
+        .chat-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        
+        .chat-msg {
+            max-width: 85%;
+            padding: 1rem 1.25rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 300ms ease, transform 300ms ease;
+            display: none; /* Initially hidden */
+        }
+        .chat-msg.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .msg-socra {
+            align-self: flex-start;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-left: 2px solid var(--accent-gold);
+        }
+        .msg-student {
+            align-self: flex-end;
+            background-color: #1a1a24;
+            border: 1px solid var(--card-border);
+        }
+        
+        /* Blueprint Box */
+        .demo-blueprint {
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.02);
+            height: 600px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .bp-header {
+            font-size: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1rem;
+        }
+        .bp-card {
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--card-border);
+            padding: 1.25rem;
+            border-radius: 4px;
+        }
+        .bp-primary-card {
+            border-left: 2px solid var(--accent-gold);
+        }
+        .bp-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .bp-field-box {
+            margin-bottom: 1rem;
+        }
+        .bp-field-box:last-child {
+            margin-bottom: 0;
+        }
+        .bp-sub-label {
+            font-size: 0.7rem;
+            color: var(--accent-gold);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        .bp-content {
+            font-size: 0.85rem;
+            min-height: 20px;
+        }
+        /* Ghost placeholder lines */
+        .bp-ghost-line {
+            height: 12px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            margin-bottom: 6px;
+            width: 100%;
+        }
+        .bp-ghost-line.short {
+            width: 60%;
+        }
+        .bp-reveal-text {
+            opacity: 0;
+            transition: opacity 400ms ease;
+        }
+        .bp-reveal-text.show {
+            opacity: 1;
+        }
+
+        .demo-cta-container {
+            text-align: center;
+            margin-top: 3rem;
+        }
+        .demo-cta-container p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        /* 6. Who This Is For */
+        .who-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        .who-left p {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+        }
+        .who-callout {
+            border-left: 1px solid var(--accent-gold);
+            padding-left: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+        .who-quote-card {
+            border: 1px solid var(--card-border);
+            padding: 4rem 3rem;
+            text-align: center;
+        }
+        .who-quote-text {
+            font-size: 1.75rem;
+            font-style: italic;
+            line-height: 1.4;
+            margin-bottom: 2rem;
+        }
+        .who-quote-attr {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* 7. Final CTA Section */
+        .final-cta {
+            background-color: #07070a;
+            border-top: 1px solid var(--card-border);
+            border-bottom: 1px solid var(--card-border);
+            text-align: center;
+            padding: 8rem 2rem;
+        }
+        .final-cta-heading {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+        .final-cta-sub {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+        }
+        .final-cta-btn {
+            font-size: 1.1rem;
+            padding: 1rem 2.5rem;
+        }
+        .final-cta-small {
+            display: block;
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        /* 8. Footer */
+        .site-footer {
+            padding: 3rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .footer-logo {
+            color: var(--accent-gold);
+            font-style: italic;
+            font-size: 1.1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-actions { display: none; }
+            .hero-title { font-size: 2.5rem; }
+            .phases-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            .phases-line {
+                width: 1px;
+                height: 100%;
+                top: 0;
+                left: 5px;
+            }
+            .phase-dot {
+                position: absolute;
+                left: -1.5px;
+                top: 6px;
+                transform: none;
+                margin-bottom: 0;
+            }
+            .phase-step {
+                padding-left: 2rem;
+                position: relative;
+            }
+            .demo-layout, .who-grid {
+                grid-template-columns: 1fr;
+            }
+            .demo-chat, .demo-blueprint {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Navigation -->
+    <header class="nav-header" id="navbar">
+        <div class="nav-logo playfair">Socra</div>
+        <div class="nav-actions">
+            <a href="#" class="btn btn-ghost">Learn Mode</a>
+            <a href="#" class="btn btn-ghost gold-border">Start Thinking</a>
+        </div>
+    </header>
+
+    <!-- 2. Hero Section -->
+    <section class="hero">
+        <div class="container hero-content">
+            <div class="hero-overline reveal">General Paper · A-Level · Singapore</div>
+            <h1 class="hero-title reveal">
+                The tutor that <span class="asks">asks,</span><br>not answers.
+            </h1>
+            <p class="hero-subtitle reveal">
+                Most tools give you the essay. Socra builds the thinker. Through Socratic dialogue and live argument mapping, you develop the exact reasoning habits Cambridge examiners reward — before you ever sit the exam.
+            </p>
+            <div class="hero-ctas reveal">
+                <a href="#" class="btn btn-primary">Start a session</a>
+                <a href="#demo" class="btn btn-ghost">See how it works</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. The Honest Differentiator Section -->
+    <section class="container">
+        <h2 class="section-title reveal">Built for the exam room, not the submission.</h2>
+        <div class="diff-grid">
+            <div class="diff-card reveal">
+                <!-- Simple Question Mark SVG -->
+                <svg class="diff-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <h3 class="diff-card-title playfair">We ask. You think.</h3>
+                <p class="diff-card-body">Socra never gives you arguments, outlines, or model answers. Every idea in your Blueprint came from you — which means every idea will still be there when you sit the exam alone.</p>
+            </div>
+            <div class="diff-card reveal">
+                <!-- Stacked Squares SVG -->
+                <svg class="diff-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <rect x="7" y="7" width="14" height="14" rx="2" ry="2"></rect>
+                    <rect x="11" y="11" width="10" height="10" rx="2" ry="2"></rect>
+                </svg>
+                <h3 class="diff-card-title playfair">Rigour over reassurance.</h3>
+                <p class="diff-card-body">If your argument drifts from the question, Socra will catch it. If your example lacks an analytical link, you will be asked to make one. This is uncomfortable by design.</p>
+            </div>
+            <div class="diff-card reveal">
+                <!-- Upward Arrow SVG -->
+                <svg class="diff-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
+                <h3 class="diff-card-title playfair">Transfer, not dependence.</h3>
+                <p class="diff-card-body">The goal of every session is that Socra's questions become your own internal voice. Six months of sessions should mean you no longer need them.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. How It Works -->
+    <section class="container">
+        <h2 class="section-title reveal">Four phases. One session. Exam-ready thinking.</h2>
+        <div class="phases-container">
+            <div class="phases-line"></div>
+            <div class="phases-grid">
+                <div class="phase-step reveal">
+                    <div class="phase-dot"></div>
+                    <div class="phase-number">Phase 01</div>
+                    <h3 class="phase-title playfair">Question Autopsy</h3>
+                    <p class="phase-desc">Before any argument, every loaded term in the question is interrogated and defined. You cannot drift from a question you have properly understood.</p>
+                </div>
+                <div class="phase-step reveal">
+                    <div class="phase-dot"></div>
+                    <div class="phase-number">Phase 02</div>
+                    <h3 class="phase-title playfair">Argument Construction</h3>
+                    <p class="phase-desc">Build three paragraph arguments through dialogue. Each one follows the structure Cambridge examiners reward — topic sentence, development, example, analytical link back to the question.</p>
+                </div>
+                <div class="phase-step reveal">
+                    <div class="phase-dot"></div>
+                    <div class="phase-number">Phase 03</div>
+                    <h3 class="phase-title playfair">Stress Test</h3>
+                    <p class="phase-desc">Your weakest argument gets challenged hard. Not to break you — to find the gaps before the examiner does.</p>
+                </div>
+                <div class="phase-step reveal">
+                    <div class="phase-dot"></div>
+                    <div class="phase-number">Phase 04</div>
+                    <h3 class="phase-title playfair">Blueprint</h3>
+                    <p class="phase-desc">A structured, downloadable essay blueprint built entirely from your own thinking. Every field filled by you, organised by Socra.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Live Demo Component -->
+    <section class="container" id="demo">
+        <h2 class="section-title reveal">See a session in progress.</h2>
+        <div class="demo-layout">
+            
+            <!-- Left Column: Chat -->
+            <div class="demo-chat reveal">
+                <div class="chat-header playfair">
+                    "Learning facts is no longer necessary because information can be instantly accessed online. Evaluate this statement."
+                </div>
+                <div class="chat-body" id="chat-body">
+                    <!-- Messages populated via JS -->
+                </div>
+            </div>
+
+            <!-- Right Column: Blueprint -->
+            <div class="demo-blueprint reveal">
+                <h3 class="bp-header playfair">Blueprint</h3>
+                
+                <div class="bp-card">
+                    <span class="bp-label">Key Terms</span>
+                    
+                    <div class="bp-field-box">
+                        <span class="bp-sub-label">Learning facts</span>
+                        <div class="bp-content" id="bp-term-1">
+                            <!-- JS resets content to ghosts -->
+                        </div>
+                    </div>
+
+                    <div class="bp-field-box">
+                        <span class="bp-sub-label">Instantly accessed online</span>
+                        <div class="bp-content" id="bp-term-2">
+                            <!-- JS resets content to ghosts -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bp-card bp-primary-card">
+                    <span class="bp-label">Thesis</span>
+                    <div class="bp-content" id="bp-thesis">
+                        <!-- JS resets content to ghosts -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="demo-cta-container reveal">
+            <p>Your Blueprint builds like this — from your thinking, not ours.</p>
+            <a href="#" class="btn btn-primary">Try it now</a>
+        </div>
+    </section>
+
+    <!-- 6. Who This Is For -->
+    <section class="container">
+        <h2 class="section-title reveal">Especially if you've been told to 'evaluate more'.</h2>
+        <div class="who-grid">
+            <div class="who-left reveal">
+                <p>Most GP feedback says the same things. More evaluation. Better examples. Stay focused on the question. But nobody shows you how. Socra was built for students who are ready to learn the method — not just read another model essay.</p>
+                <div class="who-callout">Science stream students building analytical thinking for the first time</div>
+                <div class="who-callout">Students who keep getting Bs and don't know why</div>
+                <div class="who-callout">Anyone who wants to understand GP, not just survive it</div>
+            </div>
+            <div class="who-right reveal">
+                <div class="who-quote-card">
+                    <div class="who-quote-text playfair">"I felt like I actually learned something — not just produced something."</div>
+                    <div class="who-quote-attr">— Beta tester, JC2</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. Final CTA -->
+    <section class="final-cta">
+        <div class="container reveal">
+            <h2 class="final-cta-heading playfair">Start thinking differently.</h2>
+            <p class="final-cta-sub">One session. One question. See what you build.</p>
+            <a href="#" class="btn btn-primary final-cta-btn">Begin your first session</a>
+            <span class="final-cta-small">No model answers. No shortcuts. Just better thinking.</span>
+        </div>
+    </section>
+
+    <!-- 8. Footer -->
+    <footer class="site-footer">
+        <span class="footer-logo playfair">Socra</span>
+        <span>Built for Singapore GP</span>
+        <span>&copy; 2025</span>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            /* 1. Navbar Scroll Effect */
+            const navbar = document.getElementById('navbar');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+
+            /* 2. Scroll Animation Setup (Staggered Fade-up) */
+            // Group reveals by their parent or approximate Y position
+            const revealElements = document.querySelectorAll('.reveal');
+            
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px 0px -10% 0px',
+                threshold: 0.1
+            };
+
+            // Using IntersectionObserver to add .is-visible class with staggers
+            const revealObserver = new IntersectionObserver((entries, observer) => {
+                // Find all intersecting entries
+                const intersecting = entries.filter(e => e.isIntersecting);
+                
+                intersecting.forEach((entry, idx) => {
+                    // Apply stagger delay via style before adding class
+                    setTimeout(() => {
+                        entry.target.classList.add('is-visible');
+                    }, idx * 60); // 60ms stagger per batch
+                    // unobserve so it only happens once
+                    observer.unobserve(entry.target);
+                });
+            }, observerOptions);
+
+            revealElements.forEach(el => revealObserver.observe(el));
+
+
+            /* 3. Demo Component Logic */
+            const demoSection = document.getElementById('demo');
+            const chatBody = document.getElementById('chat-body');
+            
+            const bpTerm1 = document.getElementById('bp-term-1');
+            const bpTerm2 = document.getElementById('bp-term-2');
+            const bpThesis = document.getElementById('bp-thesis');
+
+            const scriptSequence = [
+                {
+                    speaker: 'socra',
+                    delay: 800,
+                    text: "Before we build any argument — let's make sure we understand exactly what this question is asking. I can see three concepts doing serious work here: learning facts, no longer necessary, and instantly accessed online. Let's start with the first. What does it mean to learn facts — and is that the same as understanding them?",
+                    action: null
+                },
+                {
+                    speaker: 'student',
+                    delay: 500,
+                    text: "I think learning facts means memorising and retaining specific information — like dates, formulas, definitions. Understanding would be knowing why or how something works.",
+                    action: () => {
+                        bpTerm1.innerHTML = `<div class="bp-reveal-text">memorising and retaining specific information (vs understanding how it works)</div>`;
+                        setTimeout(() => bpTerm1.querySelector('.bp-reveal-text').classList.add('show'), 50);
+                    }
+                },
+                {
+                    speaker: 'socra',
+                    delay: 800,
+                    text: "That's a precise and useful distinction. Hold onto it — it's going to do real work later. Now: instantly accessed online. The question assumes this is straightforward. Is it?",
+                    action: null
+                },
+                {
+                    speaker: 'student',
+                    delay: 500,
+                    text: "Not really — you need internet access, and even then you need to know how to evaluate what you find.",
+                    action: () => {
+                        bpTerm2.innerHTML = `<div class="bp-reveal-text">requires access and ability to evaluate information (hidden assumption)</div>`;
+                        setTimeout(() => bpTerm2.querySelector('.bp-reveal-text').classList.add('show'), 50);
+                    }
+                },
+                {
+                    speaker: 'socra',
+                    delay: 800,
+                    text: "Exactly. So the question contains a hidden assumption. Good. Now before we argue — what's your provisional position? One sentence.",
+                    action: null
+                },
+                {
+                    speaker: 'student',
+                    delay: 500,
+                    text: "Learning facts is still necessary because knowing things enables you to think faster and evaluate information you encounter.",
+                    action: () => {
+                        bpThesis.innerHTML = `<div class="bp-reveal-text">Learning facts is still necessary because knowing things enables you to think faster and evaluate information you encounter.</div>`;
+                        setTimeout(() => bpThesis.querySelector('.bp-reveal-text').classList.add('show'), 50);
+                    }
+                }
+            ];
+
+            const ghostHTML = `
+                <div class="bp-ghost-line"></div>
+                <div class="bp-ghost-line short"></div>
+            `;
+            const ghostThesisHTML = `
+                <div class="bp-ghost-line"></div>
+                <div class="bp-ghost-line"></div>
+                <div class="bp-ghost-line short"></div>
+            `;
+
+            let demoState = {
+                isPlaying: false,
+                stepIndex: 0,
+                timeoutId: null
+            };
+
+            function resetDemo() {
+                if(demoState.timeoutId) clearTimeout(demoState.timeoutId);
+                demoState.isPlaying = false;
+                demoState.stepIndex = 0;
+
+                // Clear chat
+                chatBody.innerHTML = '';
+                
+                // Clear Blueprint
+                bpTerm1.innerHTML = ghostHTML;
+                bpTerm2.innerHTML = ghostHTML;
+                bpThesis.innerHTML = ghostThesisHTML;
+            }
+
+            function playNextDemoStep() {
+                if(demoState.stepIndex >= scriptSequence.length) {
+                    demoState.isPlaying = false;
+                    return;
+                }
+
+                const curr = scriptSequence[demoState.stepIndex];
+
+                demoState.timeoutId = setTimeout(() => {
+                    
+                    // Create chat bubble
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `chat-msg msg-${curr.speaker}`;
+                    msgDiv.textContent = curr.text;
+                    msgDiv.style.display = 'block';
+
+                    chatBody.appendChild(msgDiv);
+
+                    // Required tiny delay before adding a class to trigger CSS transition
+                    setTimeout(() => {
+                        msgDiv.classList.add('show');
+                        chatBody.scrollTop = chatBody.scrollHeight;
+
+                        // Trigger any associated action
+                        if(curr.action) curr.action();
+
+                        // Proceed
+                        demoState.stepIndex++;
+                        playNextDemoStep();
+                    }, 50);
+
+                }, curr.delay);
+            }
+
+            // Demo Intersection Observer
+            const demoObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Resumed / Entered view
+                        if(!demoState.isPlaying) {
+                            demoState.isPlaying = true;
+                            // small pause before starting
+                            demoState.timeoutId = setTimeout(() => playNextDemoStep(), 300);
+                        }
+                    } else {
+                        // Left view, reset
+                        resetDemo();
+                    }
+                });
+            }, {
+                root: null,
+                threshold: 0.3
+            });
+
+            if (demoSection) {
+                // Initialize clean slate
+                resetDemo();
+                demoObserver.observe(demoSection);
+            }
+
+        });
+    </script>
+</body>
+</html>
