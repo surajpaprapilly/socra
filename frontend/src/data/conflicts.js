@@ -90,10 +90,11 @@ export const CONFLICTS = [
     descriptor: "Social media promised to empower people. Did it deliver?",
     examYears: ["2024 Q7", "2021 Q4", "2019 Q4", "2017 Q12"],
     examQuestions: [
-      "The problem with social media is that everyone talks but no one listens. Evaluate this claim.",
+      "'The problem with social media is that everyone talks but no one listens.' Evaluate this claim.",
       "To what extent has social media devalued true friendship in your society?",
       "Consider the view that social media has more influence than politicians.",
-      "The quality of written language is being destroyed by social media. What is your view?"
+      "'The quality of written language is being destroyed by social media.' What is your view?",
+      "'Online advertisements use increasingly sophisticated methods to target consumers.' To what extent does this bring more harm than good?"
     ],
     searchQuery: "social media echo chambers filter bubbles democracy polarisation"
   },
@@ -108,7 +109,8 @@ export const CONFLICTS = [
     examYears: ["2025 Q4", "2023 Q10"],
     examQuestions: [
       "How far do you agree that media coverage of celebrities has a positive influence on young people in your society?",
-      "Evaluate the claim that sports personalities make good role models for young people."
+      "Evaluate the claim that sports personalities make good role models for young people.",
+      "Assess the view that only well-known works of art can be considered great."
     ],
     searchQuery: "celebrity influence young people media role models fame culture"
   },
@@ -122,9 +124,10 @@ export const CONFLICTS = [
     descriptor: "Democratising knowledge also democratised deception",
     examYears: ["2025 Q7", "2021 Q8", "2024 Q9"],
     examQuestions: [
-      "Learning facts is no longer necessary because information can be instantly accessed online. Evaluate this statement.",
+      "'Learning facts is no longer necessary because information can be instantly accessed online.' Evaluate this statement.",
       "Is news today reliable?",
-      "To what extent are autobiographies a reliable way of learning about well-known historical figures?"
+      "To what extent are autobiographies a reliable way of learning about well-known historical figures?",
+      "'Education today should involve more than the study of academic subjects.' How far do you agree?"
     ],
     searchQuery: "misinformation fake news information reliability media literacy"
   },
@@ -223,8 +226,9 @@ export const CONFLICTS = [
     examYears: ["2023 Q5", "2021 Q7", "2020 Q12"],
     examQuestions: [
       "People who undertake voluntary work do so more for their benefit than for the benefit of others. Discuss.",
-      "What an individual eats or drinks should not be the concern of the state. What is your view?",
-      "How far can prosperity and uncontrolled population growth go hand in hand?"
+      "'What an individual eats or drinks should not be the concern of the state.' What is your view?",
+      "How far can prosperity and uncontrolled population growth go hand in hand?",
+      "To what extent do you agree that enough is done in your society to encourage a healthy lifestyle?"
     ],
     searchQuery: "individual environmental action government regulation climate policy systemic change"
   },
@@ -306,8 +310,9 @@ export const CONFLICTS = [
     examYears: ["2024 Q11", "2016 Q5", "2018 Q2"],
     examQuestions: [
       "Consider the view that profitability should be the highest priority of a business.",
-      "Human need, rather than profit, should always be the main concern of scientific research. Discuss.",
-      "To what extent is the pursuit of continuous economic growth a desirable goal?"
+      "'Human need, rather than profit, should always be the main concern of scientific research.' Discuss.",
+      "To what extent is the pursuit of continuous economic growth a desirable goal?",
+      "How desirable is it for a country to provide free healthcare for all its citizens?"
     ],
     searchQuery: "pharmaceutical profit research funding commercial science public good"
   },
@@ -340,7 +345,7 @@ export const CONFLICTS = [
     examQuestions: [
       "Is globalisation to be welcomed or feared today?",
       "To what extent can any society claim to be great?",
-      "Countries experiencing conflict should be left to sort out their own problems. How far do you agree?"
+      "'Countries experiencing conflict should be left to sort out their own problems.' How far do you agree?"
     ],
     searchQuery: "globalisation inequality developing nations winners losers trade poverty"
   },
@@ -357,7 +362,7 @@ export const CONFLICTS = [
       "Assess the extent to which all people in your society have the opportunity to achieve their full potential.",
       "Assess the extent to which different age groups in your society are valued equally.",
       "Evaluate the claim that equality of opportunity for females is a desirable, but unrealistic goal.",
-      "People who do the most worthwhile jobs rarely receive the best financial rewards. To what extent is this true of your society?"
+      "'People who do the most worthwhile jobs rarely receive the best financial rewards.' To what extent is this true of your society?"
     ],
     searchQuery: "meritocracy inequality social mobility structural barriers privilege Singapore"
   },
@@ -373,7 +378,8 @@ export const CONFLICTS = [
     examQuestions: [
       "Is globalisation to be welcomed or feared today?",
       "Examine the role of music in establishing a national identity in your society.",
-      "To what extent are festivals and national holidays effective in promoting unity in your society?"
+      "To what extent are festivals and national holidays effective in promoting unity in your society?",
+      "'There is a lack of appreciation for the value of music.' How far is this true in your society?"
     ],
     searchQuery: "cultural identity globalisation homogenisation national culture local traditions"
   },

@@ -4,6 +4,7 @@ import { CONFLICTS } from '../../data/conflicts';
 import { THEMES } from '../../data/themes';
 import { useSession } from '../../context/SessionContext';
 import ArticleTile from '../learn/ArticleTile';
+import GPQuestionPicker from './GPQuestionPicker';
 
 export default function ConflictReading() {
     const { conflictId } = useParams();
@@ -17,6 +18,7 @@ export default function ConflictReading() {
     const [completedUrls, setCompletedUrls] = useState(new Set());
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showPicker, setShowPicker] = useState(false);
 
     useEffect(() => {
         if (!conflict || !theme) return;
@@ -72,7 +74,7 @@ export default function ConflictReading() {
 
     const handleContinue = () => {
         if (completedUrls.size >= 1) {
-            navigate('/test/init', { state: { question: conflict.title } });
+            setShowPicker(true);
         }
     };
 
@@ -100,6 +102,18 @@ export default function ConflictReading() {
         return (
             <div className="flex-1 w-full max-w-3xl mx-auto flex flex-col items-center pt-24 text-center">
                 <p className="text-amber font-mono">{error}</p>
+            </div>
+        );
+    }
+
+    // ── Question picker screen ──────────────────────────────────────────────
+    if (showPicker) {
+        return (
+            <div className="w-full min-h-[calc(100vh-64px)] flex flex-col bg-background">
+                <GPQuestionPicker
+                    conflict={conflict}
+                    onBack={() => setShowPicker(false)}
+                />
             </div>
         );
     }

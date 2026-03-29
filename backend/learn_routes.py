@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -15,6 +16,14 @@ from models import (
     CanvasCardMeta,
     CanvasConnectorMeta
 )
+from article_cache import (
+    get_cached_readings,
+    set_cached_readings,
+    get_cached_conflict_readings,
+    set_cached_conflict_readings,
+)
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -149,9 +158,17 @@ async def _generate_why_relevant(article: dict, question: str) -> str:
 
 @router.post("/conflict-readings", response_model=ConflictReadingsResponse)
 async def get_conflict_readings(req: ConflictReadingsRequest):
+    # ── Cache-first lookup ────────────────────────────────────────────────────
+    cached = get_cached_conflict_readings(req.conflict_id)
+    if cached:
+        return ConflictReadingsResponse(**cached)
+    # ─────────────────────────────────────────────────────────────────────────
+
     if exa is None:
-        print("Exa API unavailble, falling back to original code.")
-        return await _get_conflict_readings_claude_fallback(req)
+        raise HTTPException(
+            status_code=503,
+            detail="Exa API is not configured. Set EXA_API_KEY in your .env file."
+        )
         
     try:
         side_a_query = f"{req.side_a} {req.search_query} analysis arguments"
@@ -235,93 +252,41 @@ async def get_conflict_readings(req: ConflictReadingsRequest):
         
         # If any list is empty, maybe fallback or just return what we have? 
         # For robustness, returning what we have.
-        return ConflictReadingsResponse(
+        response = ConflictReadingsResponse(
             side_a_articles=side_a_processed,
             side_b_articles=side_b_processed,
             singapore_articles=sg_processed
         )
+        # ── Write to cache for all future requests ────────────────────────────
+        set_cached_conflict_readings(
+            conflict_id=req.conflict_id,
+            side_a_articles=[a.dict() for a in side_a_processed],
+            side_b_articles=[a.dict() for a in side_b_processed],
+            singapore_articles=[a.dict() for a in sg_processed]
+        )
+        # ─────────────────────────────────────────────────────────────────────
+        return response
             
     except Exception as e:
-        print(f"Exa search failed for conflict-readings: {e}. Falling back.")
-        return await _get_conflict_readings_claude_fallback(req)
-
-async def _get_conflict_readings_claude_fallback(req: ConflictReadingsRequest):
-    system_prompt = f"""You are an expert researcher helping Singapore A-Level students find high-quality readings for a GP conflict: {req.side_a} vs {req.side_b}.
-    
-Find a total of 6-8 excellent readings split into 3 categories:
-1. side_a_articles: 2-3 articles supporting "{req.side_a}"
-2. side_b_articles: 2-3 articles supporting "{req.side_b}"
-3. singapore_articles: 1-2 articles providing a Singapore context for this conflict.
-
-Prioritise: long-form journalism, reports, reputable think tanks (Brookings, Pew, The Economist, BBC, Guardian, CNA, Straits Times).
-Avoid: Reddit, Wikipedia, low-quality blogs.
-
-Output ONLY a valid JSON object matching exactly this schema:
-{{
-  "side_a_articles": [ {{ "title": "...", "url": "https...", "source": "Pub Name", "why_relevant": "...", "estimated_minutes": "8 min" }} ],
-  "side_b_articles": [ ... ],
-  "singapore_articles": [ ... ]
-}}"""
-
-    messages = [
-        {"role": "user", "content": f"Find readings for Theme: {req.theme}, Conflict: {req.side_a} vs {req.side_b}. General Query: {req.search_query}"}
-    ]
-
-    response = await client.messages.create(
-        model=model,
-        max_tokens=2500,
-        system=system_prompt,
-        tools=[{"type": "web_search_20250305", "name": "web_search"}],
-        messages=messages
-    )
-
-    max_loops = 3
-    loop_count = 0
-    while response.stop_reason == "tool_use" and loop_count < max_loops:
-        loop_count += 1
-        messages.append({"role": "assistant", "content": response.content})
-
-        tool_results = []
-        for block in response.content:
-            if getattr(block, "type", None) == "tool_result":
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": block.tool_use_id,
-                    "content": block.content
-                })
-
-        if tool_results:
-            messages.append({"role": "user", "content": tool_results})
-        else:
-            break
-
-        response = await client.messages.create(
-            model=model,
-            max_tokens=2500,
-            system=system_prompt,
-            tools=[{"type": "web_search_20250305", "name": "web_search"}],
-            messages=messages
+        logger.error("Exa search failed for /conflict-readings (conflict_id=%s): %s", req.conflict_id, e)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Exa search failed: {e}"
         )
-
-    text_blocks = [block.text for block in response.content if block.type == "text"]
-    final_text = text_blocks[0] if text_blocks else '{"side_a_articles":[], "side_b_articles":[], "singapore_articles":[]}'
-    
-    import re
-    final_text = re.sub(r'^```(?:json)?\s*', '', final_text.strip())
-    final_text = re.sub(r'\s*```$', '', final_text.strip())
-
-    try:
-        data = json.loads(final_text)
-        return ConflictReadingsResponse(**data)
-    except Exception as e:
-        print("Failed to parse JSON:", final_text)
-        raise HTTPException(status_code=500, detail="Failed to parse fallback readings response")
 
 @router.post("/readings", response_model=ReadingsResponse)
 async def get_readings(req: ReadingsRequest):
+    # ── Cache-first lookup ────────────────────────────────────────────────────
+    cached_articles = get_cached_readings(req.question)
+    if cached_articles:
+        return ReadingsResponse(readings=[ReadingResult(**a) for a in cached_articles])
+    # ─────────────────────────────────────────────────────────────────────────
+
     if exa is None:
-        print("Exa API unavailble, falling back to original code.")
-        return await _get_readings_claude_fallback(req)
+        raise HTTPException(
+            status_code=503,
+            detail="Exa API is not configured. Set EXA_API_KEY in your .env file."
+        )
         
     try:
         general_query = f"{req.question} analysis opinion long-form"
@@ -408,100 +373,28 @@ async def get_readings(req: ReadingsRequest):
             ))
             
         if len(readings_results) >= 3:
+            # ── Write to cache ────────────────────────────────────────────────
+            set_cached_readings(req.question, [r.dict() for r in readings_results])
+            # ─────────────────────────────────────────────────────────────────
             return ReadingsResponse(readings=readings_results)
         else:
-            print("Exa returned < 3 results, falling back to Claude web search.")
-            return await _get_readings_claude_fallback(req)
+            logger.error(
+                "Exa returned only %d results for question: %s",
+                len(readings_results), req.question[:80]
+            )
+            raise HTTPException(
+                status_code=502,
+                detail=f"Exa returned too few results ({len(readings_results)}). Check your EXA_API_KEY and domain filters."
+            )
             
+    except HTTPException:
+        raise  # re-raise without wrapping
     except Exception as e:
-        print(f"Exa search failed: {e}. Falling back.")
-        return await _get_readings_claude_fallback(req)
-
-async def _get_readings_claude_fallback(req: ReadingsRequest):
-    system_prompt = """You are an expert researcher helping Singapore A-Level students find high-quality readings for General Paper.
-
-Given a GP question, search the web and find 4-5 excellent readings.
-Prioritise: long-form journalism, academic explainers, policy reports, reputable think tanks 
-(Brookings, Pew, The Economist, BBC, Guardian, Channel NewsAsia, Straits Times, MIT Tech Review, Foreign Affairs).
-Avoid: Reddit, Wikipedia, low-quality blogs, SEO content farms.
-
-You MUST output ONLY a valid JSON object with no markdown, no explanation, no preamble. 
-Strictly match this schema:
-{
-  "readings": [
-    {
-      "title": "Article Title",
-      "url": "https://direct-link.com/article",
-      "source": "Publication Name",
-      "why_relevant": "1 sentence explaining which angle of the GP question this addresses, written for a student",
-      "estimated_minutes": "8 min"
-    }
-  ]
-}"""
-
-    messages = [
-        {
-            "role": "user",
-            "content": f"Find 4-5 high quality readings for this GP question: {req.question}"
-        }
-    ]
-
-    readings_model = model
-
-    # Use the native Anthropic web search tool
-    response = await client.messages.create(
-        model=readings_model,
-        max_tokens=2000,
-        system=system_prompt,
-        tools=[{"type": "web_search_20250305", "name": "web_search"}],
-        messages=messages
-    )
-
-    # Agentic loop — keep going until model stops using tools
-    max_loops = 3
-    loop_count = 0
-    while response.stop_reason == "tool_use" and loop_count < max_loops:
-        loop_count += 1
-        messages.append({"role": "assistant", "content": response.content})
-
-        tool_results = []
-        for block in response.content:
-            if getattr(block, "type", None) == "tool_result":
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": block.tool_use_id,
-                    "content": block.content
-                })
-
-        # If there are tool results, pass them back. 
-        # If not, provide an empty user message or break to avoid infinite loop.
-        if tool_results:
-            messages.append({"role": "user", "content": tool_results})
-        else:
-            break
-
-        response = await client.messages.create(
-            model=readings_model,
-            max_tokens=2000,
-            system=system_prompt,
-            tools=[{"type": "web_search_20250305", "name": "web_search"}],
-            messages=messages
+        logger.error("Exa search failed for /readings (question=%s): %s", req.question[:80], e)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Exa search failed: {e}"
         )
-
-    # Extract final text response
-    text_blocks = [block.text for block in response.content if block.type == "text"]
-    final_text = text_blocks[0] if text_blocks else '{"readings": []}'
-
-    # Strip markdown code fences if present
-    final_text = re.sub(r'^```(?:json)?\s*', '', final_text.strip())
-    final_text = re.sub(r'\s*```$', '', final_text.strip())
-
-    try:
-        data = json.loads(final_text)
-        return ReadingsResponse(**data)
-    except Exception as e:
-        print("Failed to parse JSON:", final_text)
-        raise HTTPException(status_code=500, detail="Failed to parse readings response")
 
 @router.post("/reading-prompts", response_model=ReadingPromptsResponse)
 async def get_reading_prompts(req: ReadingPromptsRequest):
