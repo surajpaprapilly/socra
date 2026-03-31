@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { SessionProvider, useSession } from './context/SessionContext';
-import LandingScreen from './components/LandingScreen'; // Kept for reference but unused in main flow
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import LoginScreen from './components/auth/LoginScreen';
+import LandingScreen from './components/LandingScreen';
 import ThemeSelection from './components/ThemeSelection';
 import ConflictSelection from './components/conflicts/ConflictSelection';
 import ConflictReading from './components/conflicts/ConflictReading';
@@ -10,7 +13,8 @@ import ModeChoice from './components/ModeChoice';
 import ChatInterface from './components/ChatInterface';
 import NavBar from './components/NavBar';
 import LearnMode from './components/learn/LearnMode';
-import BankView from './components/bank/BankView';
+import SavedBlueprints from './components/bank/SavedBlueprints';
+import { supabase } from './lib/supabase';
 
 // Helper component to handle Test Mode initialization
 function TestModeInit({ onStartTest }) {
@@ -46,9 +50,15 @@ function AppRoutes() {
       const payload = { question };
       if (reaction) payload.reaction = reaction;
       
+      const { data: authData } = await supabase.auth.getSession();
+      const token = authData.session?.access_token;
+      
       const response = await fetch('http://localhost:8000/api/session/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
         body: JSON.stringify(payload)
       });
 
@@ -71,31 +81,35 @@ function AppRoutes() {
       <NavBar />
 
       <Routes>
-        <Route path="/" element={<ThemeSelection />} />
-        <Route path="/conflicts/:themeId" element={<ConflictSelection />} />
-        <Route path="/conflict/:conflictId/read" element={<ConflictReading />} />
+        <Route path="/" element={<LandingScreen />} />
+        <Route path="/login" element={<LoginScreen />} />
+        
+        {/* Protected Routes */}
+        <Route path="/app" element={<ProtectedRoute><ThemeSelection /></ProtectedRoute>} />
+        <Route path="/conflicts/:themeId" element={<ProtectedRoute><ConflictSelection /></ProtectedRoute>} />
+        <Route path="/conflict/:conflictId/read" element={<ProtectedRoute><ConflictReading /></ProtectedRoute>} />
 
-        <Route path="/mode" element={<ModeChoice />} />
+        <Route path="/mode" element={<ProtectedRoute><ModeChoice /></ProtectedRoute>} />
 
-        {/* Existing /learn - we kept the same route, LearnMode will parse Context */}
-        <Route path="/learn" element={<LearnMode />} />
+        <Route path="/learn" element={<ProtectedRoute><LearnMode /></ProtectedRoute>} />
 
-        {/* This intermediate route receives the question from ModeChoice and starts the backend session */}
-        <Route path="/test/init" element={<TestModeInit onStartTest={handleStartTest} />} />
+        <Route path="/test/init" element={<ProtectedRoute><TestModeInit onStartTest={handleStartTest} /></ProtectedRoute>} />
         
         <Route path="/test/:id" element={
-          sessionId ? (
-            <ChatInterface
-              sessionId={sessionId}
-              initialQuestion={initialQuestion}
-              initialMessage={initialMessage}
-            />
-          ) : (
-            <ThemeSelection />
-          )
+          <ProtectedRoute>
+            {sessionId ? (
+              <ChatInterface
+                sessionId={sessionId}
+                initialQuestion={initialQuestion}
+                initialMessage={initialMessage}
+              />
+            ) : (
+              <ThemeSelection />
+            )}
+          </ProtectedRoute>
         } />
 
-        <Route path="/bank" element={<BankView />} />
+        <Route path="/bank" element={<ProtectedRoute><SavedBlueprints /></ProtectedRoute>} />
       </Routes>
     </div>
   );
@@ -103,11 +117,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <SessionProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </SessionProvider>
+    <AuthProvider>
+      <SessionProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </SessionProvider>
+    </AuthProvider>
   );
 }
 

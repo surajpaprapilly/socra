@@ -5,6 +5,7 @@ import { THEMES } from '../../data/themes';
 import { useSession } from '../../context/SessionContext';
 import ArticleTile from '../learn/ArticleTile';
 import GPQuestionPicker from './GPQuestionPicker';
+import { fetchWithAuth } from '../../lib/supabase';
 
 export default function ConflictReading() {
     const { conflictId } = useParams();
@@ -26,7 +27,7 @@ export default function ConflictReading() {
         let isMounted = true;
         const fetchReadings = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/learn/conflict-readings', {
+                const response = await fetchWithAuth('http://localhost:8000/api/learn/conflict-readings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

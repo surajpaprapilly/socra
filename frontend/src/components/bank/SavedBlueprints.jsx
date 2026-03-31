@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchWithAuth } from '../../lib/supabase';
 
-export default function BankView() {
+export default function SavedBlueprints() {
     const [entries, setEntries] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTag, setActiveTag] = useState(null);
@@ -15,7 +16,7 @@ export default function BankView() {
 
     const fetchBankData = async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/bank');
+            const response = await fetchWithAuth('http://localhost:8000/api/bank');
             if (response.ok) {
                 const data = await response.json();
                 setEntries(data.entries || []);
@@ -58,7 +59,7 @@ export default function BankView() {
         return (
             <div className="w-full h-[calc(100vh-64px)] flex flex-col items-center justify-center p-12 animate-in fade-in duration-700">
                 <h1 className="font-display text-4xl text-textDefault mb-2">
-                    Knowledge Bank
+                    Saved Blueprints
                 </h1>
                 <p className="font-mono text-textMuted text-xs uppercase tracking-widest mb-16">
                     0 entries across 0 topics
@@ -66,7 +67,7 @@ export default function BankView() {
 
                 <div className="text-center space-y-8">
                     <p className="font-serif text-textMuted/60 leading-relaxed max-w-sm">
-                        Your Knowledge Bank is empty.<br />
+                        You have no saved blueprints.<br />
                         Start with Learn Mode to begin building it.
                     </p>
                     <button
@@ -86,7 +87,7 @@ export default function BankView() {
 
                 <div className="text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-700">
                     <h1 className="font-display text-4xl md:text-5xl text-textDefault tracking-tight">
-                        Knowledge Bank
+                        Saved Blueprints
                     </h1>
                     <p className="font-mono text-textMuted text-xs uppercase tracking-[0.2em]">
                         {entries.length} entries across {uniqueTags.size} topics
@@ -99,7 +100,7 @@ export default function BankView() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search your synthesised knowledge..."
+                            placeholder="Search your saved blueprints..."
                             className="w-full bg-transparent border-b border-borderDark text-sm text-textDefault placeholder-textMuted/40 focus:outline-none focus:border-amber transition-colors duration-300 py-3 font-mono"
                         />
                     </div>

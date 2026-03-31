@@ -83,7 +83,7 @@ export default function ModeChoice() {
                                 </h3>
                                 
                                 <p className="font-serif text-[15px] text-[#A39E98] leading-relaxed">
-                                    Read perspectives before you argue. Build your knowledge bank first.
+                                    Read perspectives before you argue. Build your saved blueprints first.
                                 </p>
                                 
                                 <div className="pt-2">

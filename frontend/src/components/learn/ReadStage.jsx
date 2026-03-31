@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ArticleTile from './ArticleTile';
+import { fetchWithAuth } from '../../lib/supabase';
 
 export default function ReadStage({ question, onComplete }) {
     const [readings, setReadings] = useState([]);
@@ -11,7 +12,7 @@ export default function ReadStage({ question, onComplete }) {
         let isMounted = true;
         const fetchReadings = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/learn/readings', {
+                const response = await fetchWithAuth('http://localhost:8000/api/learn/readings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question })

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fetchWithAuth } from '../../lib/supabase';
 
 // Deep merge helper that ensures fields don't accidentally revert to null when the backend returns nulls due to partial LLM outputs
 const mergeBlueprintState = (prev, incoming) => {
@@ -90,7 +91,7 @@ export default function BlueprintPanel({ sessionId, initialQuestion }) {
 
         const fetchBp = async () => {
             try {
-                const res = await fetch(`http://localhost:8000/api/blueprint/${sessionId}`);
+                const res = await fetchWithAuth(`http://localhost:8000/api/blueprint/${sessionId}`);
                 if (res.ok) {
                     const data = await res.json();
                     setBlueprint(prev => mergeBlueprintState(prev, data));
@@ -116,7 +117,7 @@ export default function BlueprintPanel({ sessionId, initialQuestion }) {
     const handleExport = async () => {
         setExportError(false);
         try {
-            const res = await fetch(`http://localhost:8000/api/blueprint/${sessionId}/export`);
+            const res = await fetchWithAuth(`http://localhost:8000/api/blueprint/${sessionId}/export`);
             if (!res.ok) throw new Error("Export failed");
             const data = await res.json();
             

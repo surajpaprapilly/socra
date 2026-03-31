@@ -1,40 +1,50 @@
-from fastapi import APIRouter, HTTPException, Body
-from typing import Dict, Any
+from fastapi import APIRouter, HTTPException, Body, Depends
+from typing import Dict, Any, Optional
 from models import BlueprintModel
+from dependencies import get_current_user
+from database import db_select, db_insert, db_update
 
 router = APIRouter()
 
-# In-memory store for blueprints
-blueprints: Dict[str, BlueprintModel] = {}
-
-@router.post("/{session_id}/init", response_model=BlueprintModel)
-async def init_blueprint(session_id: str, payload: Dict[str, str] = Body(...)):
+@router.post("/{session_id}/init", response_model=BlueprintModel, dependencies=[Depends(get_current_user)])
+async def init_blueprint(session_id: str, payload: Dict[str, str] = Body(...), current_user: dict = Depends(get_current_user)):
     """Initialises a blank blueprint with just the question."""
     if "question" not in payload:
         raise HTTPException(status_code=400, detail="Missing question in payload")
     
     question = payload["question"]
     new_blueprint = BlueprintModel(question=question)
-    blueprints[session_id] = new_blueprint
+    
+    # Store in active_blueprints table
+    await db_insert(
+        current_user["supabase"], 
+        "active_blueprints", 
+        {
+            "session_id": session_id,
+            "user_id": current_user["id"],
+            "data": new_blueprint.model_dump()
+        }
+    )
     return new_blueprint
 
-@router.get("/{session_id}", response_model=BlueprintModel)
-async def get_blueprint(session_id: str):
+@router.get("/{session_id}", response_model=BlueprintModel, dependencies=[Depends(get_current_user)])
+async def get_blueprint(session_id: str, current_user: dict = Depends(get_current_user)):
     """Returns current blueprint state."""
-    if session_id not in blueprints:
+    data = await db_select(current_user["supabase"], "active_blueprints", {"session_id": session_id})
+    if not data:
         raise HTTPException(status_code=404, detail="Blueprint not found for this session")
-    return blueprints[session_id]
+    return BlueprintModel.model_validate(data[0]["data"])
 
+# Note: We expose this directly so main.py can call it, but we need the supabase client
 @router.patch("/{session_id}", response_model=BlueprintModel)
-async def patch_blueprint(session_id: str, update_data: dict):
+async def patch_blueprint(session_id: str, update_data: dict, current_user: Optional[dict] = Depends(get_current_user)):
     """Accepts a partial blueprint update and merges it into current state."""
-    if session_id not in blueprints:
+    
+    data = await db_select(current_user["supabase"], "active_blueprints", {"session_id": session_id})
+    if not data:
         raise HTTPException(status_code=404, detail="Blueprint not found. Call init first.")
-    
-    current_bp = blueprints[session_id]
-    
-    # Get current state as dictionary
-    current_data = current_bp.model_dump()
+        
+    current_data = data[0]["data"]
     
     # Merge the update data
     for key, value in update_data.items():
@@ -71,15 +81,23 @@ async def patch_blueprint(session_id: str, update_data: dict):
                 current_data[key] = value
             
     # Validate and save
-    updated_bp = BlueprintModel.model_validate(current_data)
-    blueprints[session_id] = updated_bp
-    return updated_bp
+    updated_bp_model = BlueprintModel.model_validate(current_data)
+    
+    await db_update(
+        current_user["supabase"], 
+        "active_blueprints", 
+        {"data": updated_bp_model.model_dump()}, 
+        {"session_id": session_id}
+    )
+    
+    return updated_bp_model
 
-@router.get("/{session_id}/export")
-async def export_blueprint(session_id: str):
+@router.get("/{session_id}/export", dependencies=[Depends(get_current_user)])
+async def export_blueprint(session_id: str, current_user: dict = Depends(get_current_user)):
     """Returns the blueprint formatted as a clean JSON."""
-    if session_id not in blueprints:
+    data = await db_select(current_user["supabase"], "active_blueprints", {"session_id": session_id})
+    if not data:
         raise HTTPException(status_code=404, detail="Blueprint not found")
         
-    bp = blueprints[session_id]
+    bp = BlueprintModel.model_validate(data[0]["data"])
     return bp.model_dump(exclude_none=True)

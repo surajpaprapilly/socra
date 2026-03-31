@@ -2,8 +2,9 @@ import os
 import json
 import logging
 import asyncio
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from dependencies import get_current_user
 from typing import List, Optional
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
@@ -156,7 +157,7 @@ async def _generate_why_relevant(article: dict, question: str) -> str:
         return "Provides context and evidence for understanding this topic."
 
 
-@router.post("/conflict-readings", response_model=ConflictReadingsResponse)
+@router.post("/conflict-readings", response_model=ConflictReadingsResponse, dependencies=[Depends(get_current_user)])
 async def get_conflict_readings(req: ConflictReadingsRequest):
     # ── Cache-first lookup ────────────────────────────────────────────────────
     cached = get_cached_conflict_readings(req.conflict_id)
@@ -274,7 +275,7 @@ async def get_conflict_readings(req: ConflictReadingsRequest):
             detail=f"Exa search failed: {e}"
         )
 
-@router.post("/readings", response_model=ReadingsResponse)
+@router.post("/readings", response_model=ReadingsResponse, dependencies=[Depends(get_current_user)])
 async def get_readings(req: ReadingsRequest):
     # ── Cache-first lookup ────────────────────────────────────────────────────
     cached_articles = get_cached_readings(req.question)
@@ -396,7 +397,7 @@ async def get_readings(req: ReadingsRequest):
             detail=f"Exa search failed: {e}"
         )
 
-@router.post("/reading-prompts", response_model=ReadingPromptsResponse)
+@router.post("/reading-prompts", response_model=ReadingPromptsResponse, dependencies=[Depends(get_current_user)])
 async def get_reading_prompts(req: ReadingPromptsRequest):
     system_prompt = f"""You are an expert GP tutor helping Singapore A-Level students read actively.
     
@@ -444,7 +445,7 @@ async def get_reading_prompts(req: ReadingPromptsRequest):
         raise HTTPException(status_code=500, detail="Failed to parse reading prompts response")
 
 
-@router.post("/canvas-summary", response_model=CanvasSummaryResponse)
+@router.post("/canvas-summary", response_model=CanvasSummaryResponse, dependencies=[Depends(get_current_user)])
 async def canvas_summary(req: CanvasSummaryRequest):
     system_prompt = f"""You are Socra, an expert General Paper tutor. The student has just finished a Connection Canvas mapping out the conflict: "{req.side_a} vs {req.side_b}".
     
@@ -497,7 +498,7 @@ Output ONLY valid JSON matching this schema exactly:
             inferred_position=req.inferred_leaning
         )
 
-@router.post("/summarise", response_model=SummariseResponse)
+@router.post("/summarise", response_model=SummariseResponse, dependencies=[Depends(get_current_user)])
 async def summarise_learning(req: SummariseRequest):
     notes_context = ""
     if req.article_notes and len(req.article_notes) > 0:

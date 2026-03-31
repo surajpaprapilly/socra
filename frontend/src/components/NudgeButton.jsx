@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fetchWithAuth } from '../lib/supabase';
 
 export default function NudgeButton({ sessionId, disabled, onNudgeReceived }) {
     const [isLoading, setIsLoading] = useState(false);
@@ -6,7 +7,7 @@ export default function NudgeButton({ sessionId, disabled, onNudgeReceived }) {
     const handleNudgeRequest = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/api/session/nudge', {
+            const response = await fetchWithAuth('http://localhost:8000/api/session/nudge', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: sessionId })

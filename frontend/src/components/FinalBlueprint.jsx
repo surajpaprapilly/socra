@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSession } from '../context/SessionContext';
+import { fetchWithAuth } from '../lib/supabase';
 
 export default function FinalBlueprint({ insights, blueprint }) {
     const [copied, setCopied] = useState(false);
@@ -51,7 +52,7 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
                 canvas_data: canvasData || null
             };
 
-            const response = await fetch('http://localhost:8000/api/bank/add', {
+            const response = await fetchWithAuth('http://localhost:8000/api/bank/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -60,11 +61,11 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
             if (response.ok) {
                 setSavedToBank(true);
             } else {
-                alert("Failed to save to Knowledge Bank.");
+                alert("Failed to save to Blueprints.");
             }
         } catch (e) {
             console.error(e);
-            alert("Error saving to Knowledge Bank.");
+            alert("Error saving to Blueprints.");
         } finally {
             setIsSaving(false);
         }
@@ -134,7 +135,7 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
                         disabled={savedToBank || isSaving}
                         className={`px-6 py-3 border font-mono tracking-widest uppercase text-[11px] transition-colors duration-300 ${savedToBank ? 'bg-[#7A9E7E]/20 border-[#7A9E7E] text-[#7A9E7E]' : 'bg-transparent border-[#7A9E7E] text-[#7A9E7E] hover:bg-[#7A9E7E]/10 disabled:opacity-50'}`}
                     >
-                        {isSaving ? 'Saving...' : savedToBank ? 'Saved in Bank ✓' : 'Add to Knowledge Bank'}
+                        {isSaving ? 'Saving...' : savedToBank ? 'Saved Blueprint ✓' : 'Save Blueprint'}
                     </button>
 
                     <button

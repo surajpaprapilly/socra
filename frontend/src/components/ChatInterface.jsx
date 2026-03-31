@@ -6,6 +6,7 @@ import NudgeButton from './NudgeButton';
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { fetchWithAuth } from '../lib/supabase';
 
 
 const MessageBubble = ({ role, content }) => {
@@ -78,7 +79,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
             // Create empty assistant message placeholder to stream into
             setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
-            const response = await fetch('http://localhost:8000/api/session/chat', {
+            const response = await fetchWithAuth('http://localhost:8000/api/session/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: sessionId, message: userMsg })
