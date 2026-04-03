@@ -6,3 +6,5 @@ Paper 1 Examiner Comments Part 2.pdf
 Paper 1 Examiner Comments.pdf
 *.pdf
 
+backend/__pycache__/ai.cpython-313.pyc
+backend/__pycache__/main.cpython-313.pyc
