@@ -47,6 +47,18 @@ ai_handler = SocraAI()
 @app.post("/api/session/start", response_model=StartSessionResponse)
 async def start_session(request: StartSessionRequest, current_user: dict = Depends(get_current_user)):
     try:
+        # Rate Limiting Check
+        existing_sessions = await db_select(
+            current_user["supabase"],
+            "chat_sessions",
+            {"user_id": current_user["id"]}
+        )
+        if len(existing_sessions) >= 2:
+            raise HTTPException(
+                status_code=402, 
+                detail="You have reached the free blueprint limit. Upgrade to Premium."
+            )
+
         session_id = str(uuid.uuid4())
         
         # Store initial state 
@@ -95,6 +107,8 @@ async def start_session(request: StartSessionRequest, current_user: dict = Depen
             session_id=session_id,
             first_message=initial_ai_response
         )
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         with open("error_log.txt", "w") as f:

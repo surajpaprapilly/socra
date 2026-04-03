@@ -14,6 +14,7 @@ import ChatInterface from './components/ChatInterface';
 import NavBar from './components/NavBar';
 import LearnMode from './components/learn/LearnMode';
 import SavedBlueprints from './components/bank/SavedBlueprints';
+import PremiumModal from './components/PremiumModal';
 import { supabase } from './lib/supabase';
 
 // Helper component to handle Test Mode initialization
@@ -44,6 +45,8 @@ function AppRoutes() {
   const [initialQuestion, setInitialQuestion] = useState("");
   const [initialMessage, setInitialMessage] = useState("");
   const [sessionId, setSessionId] = useState(null);
+  
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const handleStartTest = async (question, reaction = null) => {
     try {
@@ -62,7 +65,13 @@ function AppRoutes() {
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) throw new Error("Failed to start session");
+      if (!response.ok) {
+        if (response.status === 402) {
+            setShowPremiumModal(true);
+            return;
+        }
+        throw new Error("Failed to start session");
+      }
 
       const data = await response.json();
       setSessionId(data.session_id);
@@ -79,6 +88,7 @@ function AppRoutes() {
     <div className="min-h-screen bg-background text-textDefault relative overflow-x-hidden font-mono pt-16">
       <div className="noise-overlay"></div>
       <NavBar />
+      <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
 
       <Routes>
         <Route path="/" element={<LandingScreen />} />
