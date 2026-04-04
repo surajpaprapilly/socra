@@ -73,7 +73,7 @@ export default function ReadStage({ question, onComplete }) {
 
     return (
         <div className="flex-1 w-full flex flex-col items-center py-12 px-6">
-            <div className="max-w-[720px] w-full flex flex-col">
+            <div className="max-w-[720px] w-full flex flex-col pt-12">
                 <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <h2 className="font-display text-4xl text-amber italic mb-6 leading-tight">
                         "{question}"
