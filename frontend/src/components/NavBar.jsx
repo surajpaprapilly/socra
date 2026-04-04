@@ -21,12 +21,6 @@ export default function NavBar() {
             <div className="flex space-x-6 text-sm font-mono uppercase tracking-widest text-textMuted items-center">
                 {user ? (
                     <>
-                        <Link to="/learn" className={`hover:text-amber transition-colors ${location.pathname.startsWith('/learn') ? 'text-amber' : ''}`}>
-                            [ ◈ Learn ]
-                        </Link>
-                        <Link to="/app" className={`hover:text-amber transition-colors ${location.pathname === '/app' || location.pathname.startsWith('/react') || location.pathname.startsWith('/mode') || location.pathname.startsWith('/test') ? 'text-amber' : ''}`}>
-                            [ ◆ Inquire ]
-                        </Link>
                         <Link to="/bank" className={`hover:text-amber transition-colors ${location.pathname.startsWith('/bank') ? 'text-amber' : ''}`}>
                             [ ◉ Saved Blueprints ]
                         </Link>
