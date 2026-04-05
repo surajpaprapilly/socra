@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { SessionProvider, useSession } from './context/SessionContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginScreen from './components/auth/LoginScreen';
 import LandingScreen from './components/LandingScreen';
@@ -40,6 +40,7 @@ function TestModeInit({ onStartTest }) {
 
 function AppRoutes() {
   const navigate = useNavigate();
+  const { isDeveloper } = useAuth();
 
   // We keep this centralized for Test mode
   const [initialQuestion, setInitialQuestion] = useState("");
@@ -47,6 +48,7 @@ function AppRoutes() {
   const [sessionId, setSessionId] = useState(null);
   
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [devResetting, setDevResetting] = useState(false);
 
   const handleStartTest = async (question, reaction = null) => {
     try {
@@ -84,11 +86,45 @@ function AppRoutes() {
     }
   };
 
+  const handleDevReset = async () => {
+    if (!window.confirm('⚡ Dev: Reset all sessions and blueprints for your account?')) return;
+    setDevResetting(true);
+    try {
+      const { data: authData } = await supabase.auth.getSession();
+      const token = authData.session?.access_token;
+      const res = await fetch('http://localhost:8000/api/dev/reset-sessions', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert('✅ Sessions reset. You can now test from scratch.');
+      } else {
+        alert('❌ Reset failed — check backend logs.');
+      }
+    } catch (e) {
+      alert('❌ Could not reach the backend.');
+    } finally {
+      setDevResetting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-textDefault relative overflow-x-hidden font-mono pt-16">
       <div className="noise-overlay"></div>
       <NavBar />
       <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
+
+      {/* Dev Mode Reset Button — only visible to developer accounts */}
+      {isDeveloper && (
+        <button
+          id="dev-reset-sessions-btn"
+          onClick={handleDevReset}
+          disabled={devResetting}
+          className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest border border-amber/30 text-amber/60 bg-background/80 backdrop-blur-sm hover:border-amber/70 hover:text-amber transition-all disabled:opacity-40"
+        >
+          {devResetting ? '⏳ Resetting...' : '⚡ Reset Sessions'}
+        </button>
+      )}
 
       <Routes>
         <Route path="/" element={<LandingScreen />} />

@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 export default function NavBar() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isDeveloper } = useAuth();
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -14,9 +14,16 @@ export default function NavBar() {
 
     return (
         <nav className="w-full h-16 border-b border-borderDark flex items-center px-6 justify-between bg-background/90 backdrop-blur-sm z-50 fixed top-0 left-0">
-            <Link to={user ? "/app" : "/"} className="font-display text-2xl text-textDefault tracking-widest uppercase hover:text-amber transition-colors">
-                Socra
-            </Link>
+            <div className="flex items-center gap-4">
+                <Link to={user ? "/app" : "/"} className="font-display text-2xl text-textDefault tracking-widest uppercase hover:text-amber transition-colors">
+                    Socra
+                </Link>
+                {isDeveloper && (
+                    <span className="text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 border border-amber/40 text-amber/70 bg-amber/5 select-none">
+                        ⚡ Dev Mode
+                    </span>
+                )}
+            </div>
 
             <div className="flex space-x-6 text-sm font-mono uppercase tracking-widest text-textMuted items-center">
                 {user ? (
@@ -37,3 +44,4 @@ export default function NavBar() {
         </nav>
     );
 }
+
