@@ -23,6 +23,14 @@ from database import db_select, db_insert, db_update
 
 app = FastAPI(title="Socra API")
 
+# ---------------------------------------------------------------------------
+# Developer role helper
+# Reads app_metadata (server-side only — users CANNOT set this themselves)
+# ---------------------------------------------------------------------------
+def is_developer(user: dict) -> bool:
+    """Returns True if the authenticated user has the developer role in app_metadata."""
+    return user.get("app_metadata", {}).get("role") == "developer"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -53,9 +61,9 @@ async def start_session(request: StartSessionRequest, current_user: dict = Depen
             "chat_sessions",
             {"user_id": current_user["id"]}
         )
-        if len(existing_sessions) >= 2:
+        if not is_developer(current_user) and len(existing_sessions) >= 2:
             raise HTTPException(
-                status_code=402, 
+                status_code=402,
                 detail="You have reached the free blueprint limit. Upgrade to Premium."
             )
 
@@ -280,3 +288,28 @@ async def get_session(session_id: str, current_user: dict = Depends(get_current_
             "evidence": []
         }
     )
+
+# ---------------------------------------------------------------------------
+# Developer-only utility endpoints
+# Blocked at 403 for any non-developer account — safe to ship to production
+# ---------------------------------------------------------------------------
+@app.delete("/api/dev/reset-sessions")
+async def dev_reset_sessions(current_user: dict = Depends(get_current_user)):
+    """Wipes all chat sessions and blueprints for the dev account.
+    Only accessible by accounts with app_metadata.role == 'developer'.
+    """
+    if not is_developer(current_user):
+        raise HTTPException(status_code=403, detail="Developer access only.")
+
+    supa = current_user["supabase"]
+    user_id = current_user["id"]
+
+    async def _delete(table: str):
+        await asyncio.to_thread(
+            lambda: supa.table(table).delete().eq("user_id", user_id).execute()
+        )
+
+    await _delete("active_blueprints")
+    await _delete("chat_sessions")
+
+    return {"status": "ok", "message": "All sessions and blueprints reset for dev account."}

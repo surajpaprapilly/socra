@@ -67,6 +67,9 @@ async def patch_blueprint(session_id: str, update_data: dict, current_user: Opti
                     current_data["key_terms"].append(new_term)
         elif key == "paragraphs" and isinstance(value, list):
             for i, p in enumerate(value):
+                # Skip None placeholder slots (AI returns None for paragraphs it isn't updating)
+                if p is None:
+                    continue
                 # Only merge non-null fields
                 clean_p = {k: v for k, v in p.items() if v is not None}
                 if not clean_p:

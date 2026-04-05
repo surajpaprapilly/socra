@@ -35,9 +35,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         
         return {
             "id": user_resp.user.id,
-            "role": user_resp.user.role,
             "email": user_resp.user.email,
             "token": token,
+            "app_metadata": user_resp.user.app_metadata or {},  # Server-side only — users cannot write this
             "supabase": auth_client   # Attach client to user object for easy DB access
         }
 
