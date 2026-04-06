@@ -49,18 +49,24 @@ const getPhaseBanner = (phaseNum) => {
     }
 };
 
-export default function ChatInterface({ sessionId, initialQuestion, initialMessage }) {
+export default function ChatInterface({ sessionId, initialQuestion, initialMessage, resumeHistory, initialTurn = 1 }) {
     const { reaction } = useSession();
     
-    const [messages, setMessages] = useState(
-        initialMessage ? [{ role: 'assistant', content: initialMessage }] : []
-    );
+    const [messages, setMessages] = useState(() => {
+        // If resuming, pre-populate from DB history; otherwise start with initial AI message
+        if (resumeHistory && resumeHistory.length > 0) return resumeHistory;
+        if (initialMessage) return [{ role: 'assistant', content: initialMessage }];
+        return [];
+    });
     const [input, setInput] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
 
     // Metadata states - start at phase 2 if reaction was provided
-    const [phase, setPhase] = useState(reaction ? 2 : 1);
-    const [isFinished, setIsFinished] = useState(false);
+    const [phase, setPhase] = useState(() => {
+        if (initialTurn && initialTurn > 1) return Math.min(initialTurn, 5);
+        return reaction ? 2 : 1;
+    });
+    const [isFinished, setIsFinished] = useState(() => initialTurn > 5);
 
     // Living Blueprint states
     const [blueprint, setBlueprint] = useState(null);
@@ -182,10 +188,12 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     };
 
     useEffect(() => {
-        if (!initialMessage && messages.length === 0 && !isStreaming) {
+        // Only trigger initial stream for brand-new sessions (no resumeHistory, no initialMessage)
+        if (!resumeHistory && !initialMessage && messages.length === 0 && !isStreaming) {
             handleStream("");
         }
-    }, [initialMessage, messages.length, isStreaming]);
+    }, []);
+
 
     return (
         <div className="flex h-screen w-full relative z-10 flex-col md:flex-row">

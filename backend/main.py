@@ -220,7 +220,7 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
                     data_str = chunk.split("data: ", 1)[1].strip()
                     if data_str and data_str != "{}" and data_str != '{"error": "failed to parse"}':
                         meta = json.loads(data_str)
-                        if "current_phase" in meta and meta["current_phase"] > current_turn and meta["current_phase"] <= 5:
+                        if "current_phase" in meta and meta["current_phase"] > current_turn and meta["current_phase"] <= 6:
                             current_turn = meta["current_phase"]
                 except Exception as e:
                     print(f"Metadata parse error: {e}")
@@ -257,37 +257,115 @@ async def get_nudge(request: NudgeRequest, current_user: dict = Depends(get_curr
     nudge_text = await ai_handler.generate_nudge(session["question"], session["messages"])
     return NudgeResponse(nudge=nudge_text)
 
-@app.get("/api/session/{session_id}", response_model=SessionTranscriptResponse)
+@app.get("/api/sessions")
+async def list_sessions(current_user: dict = Depends(get_current_user)):
+    """Returns all chat sessions for the current user with lightweight blueprint snapshots."""
+    sessions = await db_select(current_user["supabase"], "chat_sessions", {"user_id": current_user["id"]})
+    blueprints = await db_select(current_user["supabase"], "active_blueprints", {"user_id": current_user["id"]})
+
+    # Index blueprints by session_id for fast lookup
+    bp_map = {bp["session_id"]: bp["data"] for bp in blueprints}
+
+    # Deduplicate by session_id (guard against any duplicate DB rows)
+    seen_ids = set()
+    deduped = []
+    for s in sessions:
+        sid = s["id"]
+        if sid in seen_ids:
+            continue
+        seen_ids.add(sid)
+        bp = bp_map.get(sid, {})
+        sq = bp.get("session_quality", {})
+        paragraphs = bp.get("paragraphs", [])
+        turn = s["turn"]
+        # Auto-heal legacy sessions by inspecting physical blueprint progress
+        valid_paras = len([p for p in paragraphs if p.get("topic_sentence")])
+        if turn < 6:
+            if bp.get("thesis") and valid_paras >= 2:
+                turn = 6
+            elif valid_paras >= 2:
+                turn = 4
+            elif valid_paras >= 1:
+                turn = 3
+            elif bp.get("key_terms"):
+                turn = 2
+
+        deduped.append({
+            "session_id": sid,
+            "question": s["question"],
+            "turn": turn,
+            "created_at": s["created_at"],
+            "is_complete": turn > 5,
+            "blueprint_snapshot": {
+                "thesis": bp.get("thesis"),
+                "paragraph_count": len([p for p in paragraphs if p.get("topic_sentence")]),
+                "session_quality": sq,
+            }
+        })
+
+    # Sort newest first
+    deduped.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return {"sessions": deduped}
+
+
+@app.get("/api/session/{session_id}")
 async def get_session(session_id: str, current_user: dict = Depends(get_current_user)):
+    """Returns full session data including live blueprint for re-hydration."""
     s_data = await db_select(current_user["supabase"], "chat_sessions", {"id": session_id})
     if not s_data:
         raise HTTPException(status_code=404, detail="Session not found")
-        
+
     session = s_data[0]
-    return SessionTranscriptResponse(
-        session_id=session_id,
-        messages=session["messages"],
-        current_turn=session["turn"],
-        metadata={
-            "current_phase": session["turn"],
-            "question_score": 0,
-            "lazy_example": False,
-            "insight_unlocked": None,
-            "blueprint": {
-                "thesis": None,
-                "arg1": None,
-                "arg2": None,
-                "counterarg": None,
-                "synthesis": None
-            },
-            "tension_axis": {
-                "pole_left": "Pole A",
-                "pole_right": "Pole B",
-                "current_position": 50
-            },
-            "evidence": []
-        }
+
+    # Also fetch the live blueprint for re-hydration
+    bp_data = await db_select(current_user["supabase"], "active_blueprints", {"session_id": session_id})
+    blueprint = bp_data[0]["data"] if bp_data else None
+
+    # Filter out the dummy first user message so it doesn't render in the chat
+    messages = session["messages"]
+    if messages and messages[0]["role"] == "user":
+        messages = messages[1:]
+
+    turn = session["turn"]
+    if turn < 6 and blueprint:
+        valid_paras = len([p for p in blueprint.get("paragraphs", []) if p.get("topic_sentence")])
+        if blueprint.get("thesis") and valid_paras >= 2:
+            turn = 6
+        elif valid_paras >= 2:
+            turn = 4
+        elif valid_paras >= 1:
+            turn = 3
+        elif blueprint.get("key_terms"):
+            turn = 2
+
+    return {
+        "session_id": session_id,
+        "question": session["question"],
+        "messages": messages,
+        "turn": turn,
+        "is_complete": turn > 5,
+        "blueprint": blueprint,
+    }
+
+@app.delete("/api/session/{session_id}")
+async def delete_session(session_id: str, current_user: dict = Depends(get_current_user)):
+    """Deletes a session and its associated active blueprint."""
+    supa = current_user["supabase"]
+    user_id = current_user["id"]
+
+    # Verify ownership before deletion
+    s_data = await db_select(supa, "chat_sessions", {"id": session_id, "user_id": user_id})
+    if not s_data:
+        raise HTTPException(status_code=404, detail="Session not found or not owned by user")
+
+    await asyncio.to_thread(
+        lambda: supa.table("active_blueprints").delete().eq("session_id", session_id).eq("user_id", user_id).execute()
     )
+    await asyncio.to_thread(
+        lambda: supa.table("chat_sessions").delete().eq("id", session_id).eq("user_id", user_id).execute()
+    )
+
+    return {"status": "ok", "message": "Session deleted"}
 
 # ---------------------------------------------------------------------------
 # Developer-only utility endpoints

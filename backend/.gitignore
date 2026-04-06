@@ -25,3 +25,6 @@ dist-ssr
 .venv
 .env
 __pycache__
+query_db.py
+fix_turn_db.py
+testdb.py
