@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { SessionProvider, useSession } from './context/SessionContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -15,26 +15,112 @@ import NavBar from './components/NavBar';
 import LearnMode from './components/learn/LearnMode';
 import SavedBlueprints from './components/bank/SavedBlueprints';
 import PremiumModal from './components/PremiumModal';
-import { supabase } from './lib/supabase';
+import { supabase, fetchWithAuth } from './lib/supabase';
 
 // Helper component to handle Test Mode initialization
 function TestModeInit({ onStartTest }) {
     const location = useLocation();
     const navigate = useNavigate();
     const { reaction } = useSession();
+    const [existingSessions, setExistingSessions] = useState(null);
     
     useEffect(() => {
-        if (location.state?.question) {
-            onStartTest(location.state.question, reaction);
-        } else {
+        if (!location.state?.question) {
             navigate('/');
+            return;
         }
+
+        const checkExisting = async () => {
+            try {
+                const res = await fetchWithAuth('http://localhost:8000/api/sessions');
+                if (res.ok) {
+                    const data = await res.json();
+                    const qStr = location.state.question.trim().toLowerCase();
+                    const matched = (data.sessions || []).filter(s => s.question.trim().toLowerCase() === qStr);
+                    
+                    if (matched.length > 0) {
+                        setExistingSessions(matched);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            // Fallback or no existing session
+            onStartTest(location.state.question, reaction);
+        };
+        checkExisting();
     }, [location, reaction, onStartTest, navigate]);
+
+    if (existingSessions) {
+        return (
+            <div className="h-[calc(100vh-64px)] w-full flex flex-col items-center justify-center text-textDefault space-y-6">
+                <p className="font-serif text-lg max-w-md text-center">
+                    You have <span className="text-amber">{existingSessions.length}</span> previous attempt{existingSessions.length > 1 ? 's' : ''} for this question.
+                </p>
+                <div className="flex space-x-6">
+                    <button 
+                        onClick={() => navigate(`/test/${existingSessions[0].session_id}`)}
+                        className="px-6 py-3 bg-amber/10 border border-amber text-amber font-mono tracking-widest uppercase text-xs hover:bg-amber/20 transition-all"
+                    >
+                        Continue Attempt {existingSessions.length} →
+                    </button>
+                    <button 
+                        onClick={() => onStartTest(location.state.question, reaction)}
+                        className="px-6 py-3 bg-transparent border border-borderDark text-textMuted font-mono tracking-widest uppercase text-xs hover:text-textDefault hover:border-borderDark transition-all"
+                    >
+                        Start Fresh
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="h-[calc(100vh-64px)] w-full flex items-center justify-center text-amber font-mono animate-pulse">
             Initializing Session...
         </div>
+    );
+}
+
+// Handles both fresh sessions (sessionId set in state) and direct URL re-hydration
+function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resumeHistory, initialTurn, isRehydrating, onRehydrate, onClearSession }) {
+    const { id } = useParams();
+
+    useEffect(() => {
+        // If the URL id doesn't match the state sessionId, fetch from DB
+        if (!isRehydrating && id && sessionId !== id) {
+            onRehydrate(id);
+        }
+    }, [id, sessionId, isRehydrating, onRehydrate]);
+
+    // Only run cleanup when the component UNMOUNTS (e.g. going back to Bank)
+    useEffect(() => {
+        return () => {
+            if (onClearSession) {
+                onClearSession();
+            }
+        };
+    }, [onClearSession]);
+
+    // Show loading if we are actively fetching, or if the state hasn't caught up to the URL
+    if (isRehydrating || sessionId !== id) {
+        return (
+            <div className="h-[calc(100vh-64px)] w-full flex items-center justify-center text-amber font-mono animate-pulse">
+                Loading Session...
+            </div>
+        );
+    }
+
+    return (
+        <ChatInterface
+            key={id} // crucial to remount if jumping between sessions
+            sessionId={id}
+            initialQuestion={initialQuestion}
+            initialMessage={initialMessage}
+            resumeHistory={resumeHistory}
+            initialTurn={initialTurn}
+        />
     );
 }
 
@@ -46,6 +132,17 @@ function AppRoutes() {
   const [initialQuestion, setInitialQuestion] = useState("");
   const [initialMessage, setInitialMessage] = useState("");
   const [sessionId, setSessionId] = useState(null);
+  const [resumeHistory, setResumeHistory] = useState(null); // For re-hydrating from DB
+  const [initialTurn, setInitialTurn] = useState(1);
+  const [isRehydrating, setIsRehydrating] = useState(false);
+  
+  const handleClearSession = useCallback(() => {
+      setSessionId(null);
+      setResumeHistory(null);
+      setInitialTurn(1);
+      setInitialQuestion("");
+      setInitialMessage("");
+  }, []);
   
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [devResetting, setDevResetting] = useState(false);
@@ -85,6 +182,33 @@ function AppRoutes() {
       alert("Failed to connect to Socra API. Make sure the backend is running.");
     }
   };
+
+  // Re-hydrate session from DB when navigating directly to /test/:id
+  const handleRehydrateSession = useCallback(async (id) => {
+    setIsRehydrating(true);
+    try {
+      const { data: authData } = await supabase.auth.getSession();
+      const token = authData.session?.access_token;
+      const res = await fetch(`http://localhost:8000/api/session/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        navigate('/');
+        return;
+      }
+      const data = await res.json();
+      setSessionId(id);
+      setInitialQuestion(data.question);
+      setInitialMessage('');
+      setResumeHistory(data.messages || []);
+      setInitialTurn(data.turn || 1);
+    } catch (e) {
+      console.error('Failed to re-hydrate session:', e);
+      navigate('/');
+    } finally {
+      setIsRehydrating(false);
+    }
+  }, [navigate]);
 
   const handleDevReset = async () => {
     if (!window.confirm('⚡ Dev: Reset all sessions and blueprints for your account?')) return;
@@ -143,15 +267,16 @@ function AppRoutes() {
         
         <Route path="/test/:id" element={
           <ProtectedRoute>
-            {sessionId ? (
-              <ChatInterface
-                sessionId={sessionId}
-                initialQuestion={initialQuestion}
-                initialMessage={initialMessage}
-              />
-            ) : (
-              <ThemeSelection />
-            )}
+            <SessionRouteHandler
+              sessionId={sessionId}
+              initialQuestion={initialQuestion}
+              initialMessage={initialMessage}
+              resumeHistory={resumeHistory}
+              initialTurn={initialTurn}
+              isRehydrating={isRehydrating}
+              onRehydrate={handleRehydrateSession}
+              onClearSession={handleClearSession}
+            />
           </ProtectedRoute>
         } />
 
