@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from '../context/SessionContext';
-import FinalBlueprint from './FinalBlueprint';
 import BlueprintPanel from './learn/BlueprintPanel';
 import NudgeButton from './NudgeButton';
 
@@ -201,11 +200,11 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
             <div className="w-full md:w-[55%] h-[50vh] md:h-full flex flex-col border-r-0 md:border-r border-b md:border-b-0 border-borderDark/40 relative overflow-hidden">
 
                 {/* Top bar minimal */}
-                <div className="h-16 flex items-center px-8 border-b border-borderDark/20 bg-background/90 backdrop-blur-sm z-20">
-                    <span className="font-display text-xl text-textDefault tracking-wide">Socra</span>
-                    <span className="mx-4 text-borderDark">|</span>
-                    <span className="font-mono text-xs text-textMuted truncate max-w-md uppercase tracking-wider">
-                        {initialQuestion}
+                <div className="min-h-16 flex items-center px-8 py-3 bg-[#11100D]/95 backdrop-blur-md border-b border-borderDark/40 z-30 shrink-0">
+                    <span className="font-display text-xl text-textDefault tracking-wide shrink-0">Socra</span>
+                    <span className="mx-4 text-borderDark shrink-0">|</span>
+                    <span className="font-serif text-sm md:text-base text-textDefault/90 italic leading-relaxed py-1">
+                        "{initialQuestion}"
                     </span>
                 </div>
 
@@ -246,10 +245,10 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                     handleSubmit(e);
                                 }
                             }}
-                            placeholder="Your structural response..."
-                            className="w-full bg-background border border-borderDark text-sm text-textDefault placeholder-textMuted/40 focus:outline-none focus:border-amber transition-colors duration-300 resize-none py-4 px-6 font-mono leading-relaxed"
+                            placeholder={isFinished ? "Inquiry complete. Revision mode active." : "Your structural response..."}
+                            className={`w-full bg-background border border-borderDark text-sm text-textDefault placeholder-textMuted/40 focus:outline-none focus:border-amber transition-colors duration-300 resize-none py-4 px-6 font-mono leading-relaxed ${isFinished ? 'opacity-50 cursor-not-allowed' : ''}`}
                             rows={3}
-                            disabled={isStreaming}
+                            disabled={isStreaming || isFinished}
                         />
                         <div className="absolute top-4 right-6">
                             <NudgeButton sessionId={sessionId} disabled={isStreaming} onNudgeReceived={(nudgeText) => {
@@ -267,9 +266,6 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
             <div className="w-full md:w-[45%] h-[50vh] md:h-full bg-[#11100D] flex flex-col relative overflow-y-auto overflow-x-hidden z-20">
                 <BlueprintPanel sessionId={sessionId} initialQuestion={initialQuestion} />
             </div>
-
-            {/* Final Payoff Overlay */}
-            {isFinished && <FinalBlueprint />}
         </div>
     );
 }

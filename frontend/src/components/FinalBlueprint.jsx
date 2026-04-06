@@ -82,7 +82,12 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
 
                 <div className="text-center mb-10">
                     <h2 className="font-display text-4xl text-amber mb-2">Inquiry Complete</h2>
-                    <p className="font-mono text-xs uppercase tracking-widest text-textMuted">You didn't get an essay. You built a blueprint.</p>
+                    <p className="font-mono text-xs uppercase tracking-widest text-textMuted mb-6">You didn't get an essay. You built a blueprint.</p>
+                    {(customQuestion || (blueprint && blueprint.question)) && (
+                         <h3 className="font-serif text-xl md:text-2xl text-textDefault leading-relaxed px-4 mx-auto max-w-2xl border-t border-borderDark/30 pt-6">
+                            "{customQuestion || blueprint.question}"
+                         </h3>
+                    )}
                 </div>
 
                 {blueprint ? (
