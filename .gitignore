@@ -14,3 +14,4 @@ __pycache__/
 
 # VSCode settings
 .vscode/
+backend/error_log.txt
