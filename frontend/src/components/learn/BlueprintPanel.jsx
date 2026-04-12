@@ -46,6 +46,11 @@ const mergeBlueprintState = (prev, incoming) => {
         };
     }
     
+    // Insights
+    if (incoming.unlocked_insights && Array.isArray(incoming.unlocked_insights)) {
+        merged.unlocked_insights = incoming.unlocked_insights;
+    }
+    
     // Scalars
     if (incoming.thesis !== null && incoming.thesis !== undefined) merged.thesis = incoming.thesis;
     if (incoming.checklist) merged.checklist = incoming.checklist;
@@ -229,6 +234,22 @@ export default function BlueprintPanel({ sessionId, initialQuestion }) {
             </div>
 
             <div className="px-8 py-8 flex flex-col space-y-12">
+                {/* Unlocked Insights Badges */}
+                {blueprint.unlocked_insights && blueprint.unlocked_insights.length > 0 && (
+                    <div className="flex flex-col space-y-4 animate-fade-in">
+                        <h3 className="font-mono text-xs uppercase text-amber/80 tracking-wider flex items-center">
+                            <span className="mr-2">✦</span> Earned Insights
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                            {blueprint.unlocked_insights.map((insight, idx) => (
+                                <div key={idx} className="flex items-center px-3 py-1.5 bg-amber/10 border border-amber/30 text-amber text-xs font-mono shadow-[0_0_8px_rgba(212,175,55,0.15)]">
+                                    {insight}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* 2. Key Terms */}
                 <div className="flex flex-col space-y-4">
                     <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Key Terms</h3>

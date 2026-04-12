@@ -48,7 +48,7 @@ const getPhaseBanner = (phaseNum) => {
     }
 };
 
-export default function ChatInterface({ sessionId, initialQuestion, initialMessage, resumeHistory, initialTurn = 1 }) {
+export default function ChatInterface({ sessionId, initialQuestion, initialMessage, resumeHistory, initialTurn = 1, initialScore = 0 }) {
     const { reaction } = useSession();
     
     const [messages, setMessages] = useState(() => {
@@ -66,6 +66,10 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
         return reaction ? 2 : 1;
     });
     const [isFinished, setIsFinished] = useState(() => initialTurn > 5);
+
+    // Live Signaling states
+    const [score, setScore] = useState(initialScore);
+    const [toastMessage, setToastMessage] = useState(null);
 
     // Living Blueprint states
     const [blueprint, setBlueprint] = useState(null);
@@ -130,6 +134,13 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                         if (meta.current_phase > 5) {
                                             setIsFinished(true); // Trigger payoff screen
                                         }
+                                    }
+                                    if (meta.question_score !== undefined) {
+                                        setScore(meta.question_score);
+                                    }
+                                    if (meta.insight_unlocked) {
+                                        setToastMessage(meta.insight_unlocked);
+                                        setTimeout(() => setToastMessage(null), 5000);
                                     }
                                 }
                             } catch (e) {
@@ -199,14 +210,36 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
             {/* 55% Conversation Area */}
             <div className="w-full md:w-[55%] h-[50vh] md:h-full flex flex-col border-r-0 md:border-r border-b md:border-b-0 border-borderDark/40 relative overflow-hidden">
 
-                {/* Top bar minimal */}
-                <div className="min-h-16 flex items-center px-8 py-3 bg-[#11100D]/95 backdrop-blur-md border-b border-borderDark/40 z-30 shrink-0">
-                    <span className="font-display text-xl text-textDefault tracking-wide shrink-0">Socra</span>
-                    <span className="mx-4 text-borderDark shrink-0">|</span>
-                    <span className="font-serif text-sm md:text-base text-textDefault/90 italic leading-relaxed py-1">
-                        "{initialQuestion}"
-                    </span>
+                {/* Top bar minimal with Score */}
+                <div className="min-h-16 flex items-center justify-between px-8 py-3 bg-[#11100D]/95 backdrop-blur-md border-b border-borderDark/40 z-30 shrink-0">
+                    <div className="flex items-center overflow-hidden">
+                        <span className="font-display text-xl text-textDefault tracking-wide shrink-0">Socra</span>
+                        <span className="mx-4 text-borderDark shrink-0">|</span>
+                        <span className="font-serif text-sm md:text-base text-textDefault/90 italic leading-relaxed py-1 truncate max-w-sm xl:max-w-xl">
+                            "{initialQuestion}"
+                        </span>
+                    </div>
+                    <div className="flex items-center space-x-3 shrink-0 ml-4 animate-fade-in group hover:bg-amber/5 p-1 rounded transition-colors" title="Out of 30 A-Level Marks">
+                        <span className="text-[10px] uppercase tracking-widest text-textMuted/60 font-mono hidden md:block group-hover:text-amber/70 transition-colors">Argument Strength</span>
+                        <div className="px-3 py-1 bg-background border border-amber/30 text-amber font-mono min-w-[70px] text-center flex justify-center items-baseline shadow-sm group-hover:border-amber transition-colors">
+                            <span className="text-base font-bold">{score}</span>
+                            <span className="text-amber/50 font-normal text-xs ml-1">/ 30</span>
+                        </div>
+                    </div>
                 </div>
+
+                {/* Floating Toast Notification */}
+                {toastMessage && (
+                    <div className="absolute top-20 right-8 z-50 animate-slide-in pointer-events-none">
+                        <div className="flex items-center px-4 py-3 bg-[#11100D]/95 border border-amber shadow-[0_0_20px_rgba(212,175,55,0.15)] rounded-sm">
+                            <span className="text-amber animate-pulse mr-4 text-xl">✦</span>
+                            <div>
+                                <div className="text-[10px] uppercase tracking-widest text-amber/70 font-mono mb-1">Insight Unlocked</div>
+                                <div className="font-serif text-textDefault text-sm md:text-base font-medium tracking-wide">{toastMessage}</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Scrollable messages */}
                 <div className="flex-1 overflow-y-auto px-8 py-10 pb-32">

@@ -84,7 +84,7 @@ function TestModeInit({ onStartTest }) {
 }
 
 // Handles both fresh sessions (sessionId set in state) and direct URL re-hydration
-function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resumeHistory, initialTurn, isRehydrating, onRehydrate, onClearSession }) {
+function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resumeHistory, initialTurn, initialScore, isRehydrating, onRehydrate, onClearSession }) {
     const { id } = useParams();
 
     useEffect(() => {
@@ -120,6 +120,7 @@ function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resum
             initialMessage={initialMessage}
             resumeHistory={resumeHistory}
             initialTurn={initialTurn}
+            initialScore={initialScore}
         />
     );
 }
@@ -134,12 +135,14 @@ function AppRoutes() {
   const [sessionId, setSessionId] = useState(null);
   const [resumeHistory, setResumeHistory] = useState(null); // For re-hydrating from DB
   const [initialTurn, setInitialTurn] = useState(1);
+  const [initialScore, setInitialScore] = useState(0);
   const [isRehydrating, setIsRehydrating] = useState(false);
   
   const handleClearSession = useCallback(() => {
       setSessionId(null);
       setResumeHistory(null);
       setInitialTurn(1);
+      setInitialScore(0);
       setInitialQuestion("");
       setInitialMessage("");
   }, []);
@@ -202,6 +205,7 @@ function AppRoutes() {
       setInitialMessage('');
       setResumeHistory(data.messages || []);
       setInitialTurn(data.turn || 1);
+      setInitialScore(data.blueprint?.final_score || 0);
     } catch (e) {
       console.error('Failed to re-hydrate session:', e);
       navigate('/');
@@ -273,6 +277,7 @@ function AppRoutes() {
               initialMessage={initialMessage}
               resumeHistory={resumeHistory}
               initialTurn={initialTurn}
+              initialScore={initialScore}
               isRehydrating={isRehydrating}
               onRehydrate={handleRehydrateSession}
               onClearSession={handleClearSession}
