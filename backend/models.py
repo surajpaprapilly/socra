@@ -143,6 +143,8 @@ class BlueprintModel(BaseModel):
     thesis: Optional[str] = None
     paragraphs: List[Paragraph] = []
     counter_argument: Optional[CounterArgument] = None
+    unlocked_insights: List[str] = []
+    final_score: int = 0
     conclusion_prompts: List[str] = [
         "What is the final synthesis or ultimate insight?",
         "Why does this position ultimately override the opposing view?",
