@@ -14,6 +14,7 @@ import ChatInterface from './components/ChatInterface';
 import NavBar from './components/NavBar';
 import LearnMode from './components/learn/LearnMode';
 import SavedBlueprints from './components/bank/SavedBlueprints';
+import ProfileScreen from './components/profile/ProfileScreen';
 import PremiumModal from './components/PremiumModal';
 import { supabase, fetchWithAuth } from './lib/supabase';
 
@@ -286,6 +287,7 @@ function AppRoutes() {
         } />
 
         <Route path="/bank" element={<ProtectedRoute><SavedBlueprints /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
       </Routes>
     </div>
   );

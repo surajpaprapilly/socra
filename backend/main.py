@@ -203,6 +203,8 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
         full_response = ""
         current_turn = session["turn"]
         new_insights_unlocked = []
+        new_strengths = []
+        new_challenges = []
         latest_score = None
         async for chunk in generator:
             yield chunk
@@ -230,6 +232,14 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
                                 new_insights_unlocked.append(insight)
                         if "question_score" in meta:
                             latest_score = meta["question_score"]
+                        if "student_strengths" in meta and isinstance(meta["student_strengths"], list):
+                            for s in meta["student_strengths"]:
+                                if s and s not in new_strengths:
+                                    new_strengths.append(s)
+                        if "challenge_patterns" in meta and isinstance(meta["challenge_patterns"], list):
+                            for c in meta["challenge_patterns"]:
+                                if c and c not in new_challenges:
+                                    new_challenges.append(c)
                 except Exception as e:
                     print(f"Metadata parse error: {e}")
                     pass
@@ -247,7 +257,7 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
                 {"id": request.session_id}
             )
             
-            if new_insights_unlocked or latest_score is not None:
+            if new_insights_unlocked or new_strengths or new_challenges or latest_score is not None:
                 try:
                     bp_data = await db_select(current_user["supabase"], "active_blueprints", {"session_id": request.session_id})
                     if bp_data:
@@ -262,6 +272,22 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
                         
                         if len(updated_insights) > len(existing_insights):
                             patch["unlocked_insights"] = updated_insights
+                            
+                        existing_strengths = current_blueprint.get("student_strengths", [])
+                        updated_strengths = list(existing_strengths)
+                        for strength in new_strengths:
+                            if strength not in updated_strengths:
+                                updated_strengths.append(strength)
+                        if len(updated_strengths) > len(existing_strengths):
+                            patch["student_strengths"] = updated_strengths
+                            
+                        existing_challenges = current_blueprint.get("challenge_patterns", [])
+                        updated_challenges = list(existing_challenges)
+                        for challenge in new_challenges:
+                            if challenge not in updated_challenges:
+                                updated_challenges.append(challenge)
+                        if len(updated_challenges) > len(existing_challenges):
+                            patch["challenge_patterns"] = updated_challenges
                             
                         if latest_score is not None and latest_score != current_blueprint.get("final_score"):
                             patch["final_score"] = latest_score
@@ -333,6 +359,8 @@ async def list_sessions(current_user: dict = Depends(get_current_user)):
                 "thesis": bp.get("thesis"),
                 "paragraph_count": len([p for p in paragraphs if p.get("topic_sentence")]),
                 "session_quality": sq,
+                "student_strengths": bp.get("student_strengths", []),
+                "challenge_patterns": bp.get("challenge_patterns", [])
             }
         })
 

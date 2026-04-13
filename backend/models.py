@@ -38,6 +38,8 @@ class ChatTurnMetadata(BaseModel):
     current_phase: int
     question_score: int
     insight_unlocked: Optional[str] = None
+    student_strengths: Optional[List[str]] = None
+    challenge_patterns: Optional[List[str]] = None
     lazy_example: bool
     blueprint: Optional[BlueprintMeta] = None
     tension_axis: Optional[TensionAxisMeta] = None
@@ -144,6 +146,8 @@ class BlueprintModel(BaseModel):
     paragraphs: List[Paragraph] = []
     counter_argument: Optional[CounterArgument] = None
     unlocked_insights: List[str] = []
+    student_strengths: List[str] = []
+    challenge_patterns: List[str] = []
     final_score: int = 0
     conclusion_prompts: List[str] = [
         "What is the final synthesis or ultimate insight?",
