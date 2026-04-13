@@ -31,6 +31,9 @@ export default function NavBar() {
                         <Link to="/bank" className={`hover:text-amber transition-colors ${location.pathname.startsWith('/bank') ? 'text-amber' : ''}`}>
                             [ ◉ My Blueprints ]
                         </Link>
+                        <Link to="/profile" className={`hover:text-amber transition-colors ml-4 ${location.pathname.startsWith('/profile') ? 'text-amber' : ''}`}>
+                            [ ◒ Profile ]
+                        </Link>
                         <button onClick={handleLogout} className="hover:text-amber transition-colors ml-4 text-xs opacity-60">
                             [ ⏻ Logout ]
                         </button>
