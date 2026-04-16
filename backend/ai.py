@@ -114,11 +114,12 @@ The user's question is: "{question}"
         # We need to filter out metadata tags from the initial response if there are any
         text = response.content[0].text
         
-        # Simple extraction of everything outside <metadata>...</metadata>
+        # Simple extraction of everything outside <metadata>...</metadata> and <thinking>...</thinking>
         import re
-        clean_text = re.sub(r'<metadata>.*?</metadata>', '', text, flags=re.DOTALL).strip()
+        clean_text = re.sub(r'<metadata>.*?</metadata>', '', text, flags=re.DOTALL)
+        clean_text = re.sub(r'<thinking>.*?</thinking>', '', clean_text, flags=re.DOTALL)
         
-        return clean_text
+        return clean_text.strip()
 
     async def stream_chat_response(self, question: str, messages: List[Dict[str, str]]) -> AsyncGenerator[str, None]:
         # Formulate Anthropic messages
@@ -138,8 +139,9 @@ The user's question is: "{question}"
         )
 
         buffer = ""
-        in_metadata = False
         metadata_str = ""
+        in_metadata = False
+        in_thinking = False
         metadata_emitted = False
         
         async for event in stream:
@@ -147,17 +149,83 @@ The user's question is: "{question}"
                 chunk = event.delta.text
                 buffer += chunk
                 
-                if not metadata_emitted:
-                    if not in_metadata and "<metadata>" in buffer:
-                        in_metadata = True
-                        parts = buffer.split("<metadata>")
-                        buffer = parts[1] if len(parts) > 1 else ""
+                while True:
+                    if not in_thinking and not in_metadata:
+                        think_idx = buffer.find("<thinking>")
+                        meta_idx = buffer.find("<metadata>")
                         
-                    if in_metadata:
-                        if "</metadata>" in buffer:
-                            parts = buffer.split("</metadata>")
-                            metadata_str += parts[0]
-                            remaining_text = "".join(parts[1:])
+                        tag_idx = -1
+                        tag_type = None
+                        
+                        if think_idx != -1 and meta_idx != -1:
+                            if think_idx < meta_idx:
+                                tag_idx, tag_type = think_idx, "thinking"
+                            else:
+                                tag_idx, tag_type = meta_idx, "metadata"
+                        elif think_idx != -1:
+                            tag_idx, tag_type = think_idx, "thinking"
+                        elif meta_idx != -1:
+                            tag_idx, tag_type = meta_idx, "metadata"
+                            
+                        if tag_idx != -1:
+                            if tag_idx > 0:
+                                yield f"event: message\ndata: {json.dumps(buffer[:tag_idx])}\n\n"
+                            
+                            if tag_type == "thinking":
+                                in_thinking = True
+                                buffer = buffer[tag_idx + len("<thinking>"):]
+                            else:
+                                in_metadata = True
+                                buffer = buffer[tag_idx + len("<metadata>"):]
+                            continue
+                            
+                        first_valid_lt = -1
+                        for i in range(len(buffer)):
+                            if buffer[i] == '<':
+                                remainder = buffer[i:]
+                                if "<thinking>".startswith(remainder) or "<metadata>".startswith(remainder):
+                                    first_valid_lt = i
+                                    break
+                                    
+                        if first_valid_lt != -1:
+                            if first_valid_lt > 0:
+                                yield f"event: message\ndata: {json.dumps(buffer[:first_valid_lt])}\n\n"
+                                buffer = buffer[first_valid_lt:]
+                            break
+                        else:
+                            if buffer:
+                                yield f"event: message\ndata: {json.dumps(buffer)}\n\n"
+                                buffer = ""
+                            break
+                            
+                    elif in_thinking:
+                        end_idx = buffer.find("</thinking>")
+                        if end_idx != -1:
+                            buffer = buffer[end_idx + len("</thinking>"):]
+                            in_thinking = False
+                            continue
+                        else:
+                            first_valid_lt = -1
+                            for i in range(len(buffer)):
+                                if buffer[i] == '<':
+                                    remainder = buffer[i:]
+                                    if "</thinking>".startswith(remainder):
+                                        first_valid_lt = i
+                                        break
+                                        
+                            if first_valid_lt != -1:
+                                buffer = buffer[first_valid_lt:]
+                            else:
+                                buffer = ""
+                            break
+                            
+                    elif in_metadata:
+                        end_idx = buffer.find("</metadata>")
+                        if end_idx != -1:
+                            metadata_str += buffer[:end_idx]
+                            buffer = buffer[end_idx + len("</metadata>"):]
+                            in_metadata = False
+                            metadata_emitted = True
                             
                             try:
                                 metadata_json = json.loads(metadata_str.strip())
@@ -165,31 +233,31 @@ The user's question is: "{question}"
                             except Exception as e:
                                 print(f"Failed to parse metadata: {e}")
                                 yield f"event: metadata\ndata: {{\"error\": \"failed to parse\"}}\n\n"
-                                
-                            metadata_emitted = True
-                            in_metadata = False
-                            buffer = remaining_text
-                            if buffer:
-                                yield f"event: message\ndata: {json.dumps(buffer)}\n\n"
-                                buffer = ""
+                            continue
                         else:
-                            metadata_str += buffer
-                            buffer = ""
-                    else:
-                        # Before we see <metadata>, we just buffer it
-                        # Once we are confident no metadata is coming, we flush it
-                        if len(buffer) > 20 and "<metadata>" not in buffer:
-                            metadata_emitted = True
-                            yield f"event: metadata\ndata: {{}}\n\n"
-                            yield f"event: message\ndata: {json.dumps(buffer)}\n\n"
-                            buffer = ""
-                else:
-                    if buffer:
-                        # Cleanly replace any remaining stray newlines only at prompt borders
-                        yield f"event: message\ndata: {json.dumps(buffer)}\n\n"
-                        buffer = ""
-        
-        # End event
+                            first_valid_lt = -1
+                            for i in range(len(buffer)):
+                                if buffer[i] == '<':
+                                    remainder = buffer[i:]
+                                    if "</metadata>".startswith(remainder):
+                                        first_valid_lt = i
+                                        break
+                                        
+                            if first_valid_lt != -1:
+                                metadata_str += buffer[:first_valid_lt]
+                                buffer = buffer[first_valid_lt:]
+                            else:
+                                metadata_str += buffer
+                                buffer = ""
+                            break
+
+        if buffer and not in_thinking and not in_metadata:
+            if buffer.strip():
+                yield f"event: message\ndata: {json.dumps(buffer)}\n\n"
+
+        if not metadata_emitted:
+            yield f"event: metadata\ndata: {{}}\n\n"
+            
         yield f"event: done\ndata: [DONE]\n\n"
 
     async def generate_nudge(self, question: str, messages: List[Dict[str, str]]) -> str:
