@@ -1,0 +1,61 @@
+[
+  {
+    "timestamp": 1776443935.5668328,
+    "timestamp_iso": "2026-04-17T16:38:55Z",
+    "total_tests": 4,
+    "passed_tests": 4,
+    "results": [
+      {
+        "name": "L1: Basic structural input",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 6744,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 3,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Needs to interrogate question terms before arguing",
+            "Has moved to argument before defining key concepts"
+          ]
+        }
+      },
+      {
+        "name": "L1: Unrelated input sequence",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 3832,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 0,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": []
+        }
+      },
+      {
+        "name": "L1: Student veering off topic",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 7896,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Jumped to argument-building before interrogating question terms",
+            "Topic sentence does not yet directly answer the question"
+          ]
+        }
+      },
+      {
+        "name": "L1: extract_blueprint_patch JSON",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 1456
+      }
+    ]
+  }
+]
