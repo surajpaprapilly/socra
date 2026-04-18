@@ -57,5 +57,175 @@
         "duration_ms": 1456
       }
     ]
+  },
+  {
+    "timestamp": 1776487852.010592,
+    "timestamp_iso": "2026-04-18T04:50:52Z",
+    "total_tests": 4,
+    "passed_tests": 4,
+    "results": [
+      {
+        "name": "L1: Basic structural input",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 5820,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Needs to interrogate question terms before arguing",
+            "Jumping to position before defining key concepts"
+          ]
+        }
+      },
+      {
+        "name": "L1: Unrelated input sequence",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 7267,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Attempting to skip question analysis and jump straight to argumentation"
+          ]
+        }
+      },
+      {
+        "name": "L1: Student veering off topic",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 8295,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Bypassing question autopsy and jumping to arguments prematurely"
+          ]
+        }
+      },
+      {
+        "name": "L1: extract_blueprint_patch JSON",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 2785
+      }
+    ]
+  },
+  {
+    "timestamp": 1776498622.419424,
+    "timestamp_iso": "2026-04-18T07:50:22Z",
+    "total_tests": 7,
+    "passed_tests": 7,
+    "results": [
+      {
+        "name": "L1: Basic structural input",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 4927,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 3,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Needs to interrogate question terms before arguing",
+            "Jumping to position before defining key concepts"
+          ]
+        }
+      },
+      {
+        "name": "L1: Unrelated input sequence",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 8634,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 1,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Attempting to skip Question Autopsy phase",
+            "Hasn't engaged with term definition yet"
+          ]
+        }
+      },
+      {
+        "name": "L1: Student veering off topic",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 8132,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Jumping to argument construction before interrogating question terms"
+          ]
+        }
+      },
+      {
+        "name": "L1: extract_blueprint_patch JSON",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 1631
+      },
+      {
+        "name": "L2: The Lazy Student",
+        "layer": 2,
+        "passed": true,
+        "duration_ms": 7203,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Definition too broad \u2014 'values = morals' collapses a distinction that matters for the argument",
+            "Has not interrogated question terms before arguing"
+          ]
+        }
+      },
+      {
+        "name": "L2: The Strong Student",
+        "layer": 2,
+        "passed": true,
+        "duration_ms": 18247,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 4,
+          "insight_unlocked": null,
+          "student_strengths": [
+            "Shows awareness of temporal dimension in argument \u2014 recognising that responsibility can shift is a sophisticated structural move"
+          ],
+          "challenge_patterns": [
+            "Definition makes an unsupported philosophical claim",
+            "Key terms 'most important responsibility' and 'parent' left undefined"
+          ]
+        }
+      },
+      {
+        "name": "L2: The Stuck Student",
+        "layer": 2,
+        "passed": true,
+        "duration_ms": 3152,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Needs to push beyond surface-level definitions"
+          ]
+        }
+      }
+    ]
   }
 ]
