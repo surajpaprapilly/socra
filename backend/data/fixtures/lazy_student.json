@@ -1,0 +1,23 @@
+{
+  "name": "L2 Fixture: The Stubborn Lazy Student",
+  "question": "The most important responsibility of a parent is to teach values. Discuss",
+  "turns": [
+    {
+      "student": "Parents just teach morals, that's what values are and it is their job.",
+      "assistant_fixture": "You've linked values directly to morals. However, you haven't answered what the most important responsibility is. What exactly is the standard we're holding parents to?",
+      "assert_conditions": {
+        "challenge_patterns_not_empty": true,
+        "phase_maximum": 1
+      }
+    },
+    {
+      "student": "It's just their job. That's what I think.",
+      "assistant_fixture": "Let's pause. Stating it's their job is a claim, not an argument. What happens if a parent is completely absent? Does the responsibility shift to someone else, or does society just break down?",
+      "assert_conditions": {
+        "challenge_patterns_not_empty": true,
+        "phase_maximum": 1,
+        "score_maximum": 6
+      }
+    }
+  ]
+}

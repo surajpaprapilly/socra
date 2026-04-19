@@ -1,23 +1,23 @@
 [
   {
-    "timestamp": 1776443935.5668328,
-    "timestamp_iso": "2026-04-17T16:38:55Z",
-    "total_tests": 4,
-    "passed_tests": 4,
+    "timestamp": 1776508906.890753,
+    "timestamp_iso": "2026-04-18T10:41:46Z",
+    "total_tests": 8,
+    "passed_tests": 5,
     "results": [
       {
         "name": "L1: Basic structural input",
         "layer": 1,
         "passed": true,
-        "duration_ms": 6744,
+        "duration_ms": 12405,
         "metadata": {
           "current_phase": 1,
-          "question_score": 3,
+          "question_score": 2,
           "insight_unlocked": null,
           "student_strengths": [],
           "challenge_patterns": [
-            "Needs to interrogate question terms before arguing",
-            "Has moved to argument before defining key concepts"
+            "Jumping to argument before interrogating question terms",
+            "Vague framing \u2014 'good people' is undefined and undefended"
           ]
         }
       },
@@ -25,7 +25,7 @@
         "name": "L1: Unrelated input sequence",
         "layer": 1,
         "passed": true,
-        "duration_ms": 3832,
+        "duration_ms": 5809,
         "metadata": {
           "current_phase": 1,
           "question_score": 0,
@@ -38,15 +38,15 @@
         "name": "L1: Student veering off topic",
         "layer": 1,
         "passed": true,
-        "duration_ms": 7896,
+        "duration_ms": 7149,
         "metadata": {
           "current_phase": 1,
-          "question_score": 2,
+          "question_score": 3,
           "insight_unlocked": null,
           "student_strengths": [],
           "challenge_patterns": [
-            "Jumped to argument-building before interrogating question terms",
-            "Topic sentence does not yet directly answer the question"
+            "Drifting from question terms before defining them",
+            "Conflating 'values' with economic outcomes prematurely"
           ]
         }
       },
@@ -54,21 +54,59 @@
         "name": "L1: extract_blueprint_patch JSON",
         "layer": 1,
         "passed": true,
-        "duration_ms": 1456
+        "duration_ms": 1660
+      },
+      {
+        "name": "L2 Fixture: The Stubborn Lazy Student",
+        "layer": 2,
+        "passed": true,
+        "details": "Clean",
+        "duration_ms": 14927
+      },
+      {
+        "name": "L2 Fixture: The Full Progression Strong Student",
+        "layer": 2,
+        "passed": false,
+        "details": "Turn 2: Expected phase >= 2 but got 1",
+        "duration_ms": 23857
+      },
+      {
+        "name": "L3: Standard Quality Checks",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: conciseness scored 1/5, targeted_affirmation scored 3/5",
+        "duration_ms": 12676,
+        "scores": {
+          "socratic_quality": 4,
+          "conciseness": 1,
+          "targeted_affirmation": 3
+        }
+      },
+      {
+        "name": "L3: Evaluating Targeted Affirmation",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: conciseness scored 2/5",
+        "duration_ms": 6779,
+        "scores": {
+          "socratic_quality": 5,
+          "conciseness": 2,
+          "targeted_affirmation": 5
+        }
       }
     ]
   },
   {
-    "timestamp": 1776487852.010592,
-    "timestamp_iso": "2026-04-18T04:50:52Z",
-    "total_tests": 4,
-    "passed_tests": 4,
+    "timestamp": 1776510846.480266,
+    "timestamp_iso": "2026-04-18T11:14:06Z",
+    "total_tests": 8,
+    "passed_tests": 5,
     "results": [
       {
         "name": "L1: Basic structural input",
         "layer": 1,
         "passed": true,
-        "duration_ms": 5820,
+        "duration_ms": 5318,
         "metadata": {
           "current_phase": 1,
           "question_score": 2,
@@ -76,7 +114,7 @@
           "student_strengths": [],
           "challenge_patterns": [
             "Needs to interrogate question terms before arguing",
-            "Jumping to position before defining key concepts"
+            "Jumping to position without defining key concepts"
           ]
         }
       },
@@ -84,29 +122,28 @@
         "name": "L1: Unrelated input sequence",
         "layer": 1,
         "passed": true,
-        "duration_ms": 7267,
+        "duration_ms": 4403,
         "metadata": {
           "current_phase": 1,
-          "question_score": 2,
+          "question_score": 0,
           "insight_unlocked": null,
           "student_strengths": [],
-          "challenge_patterns": [
-            "Attempting to skip question analysis and jump straight to argumentation"
-          ]
+          "challenge_patterns": []
         }
       },
       {
         "name": "L1: Student veering off topic",
         "layer": 1,
         "passed": true,
-        "duration_ms": 8295,
+        "duration_ms": 6012,
         "metadata": {
           "current_phase": 1,
-          "question_score": 2,
+          "question_score": 3,
           "insight_unlocked": null,
           "student_strengths": [],
           "challenge_patterns": [
-            "Bypassing question autopsy and jumping to arguments prematurely"
+            "Drifting from question terms before defining them",
+            "Conflating economic provision with the concept of values"
           ]
         }
       },
@@ -114,21 +151,61 @@
         "name": "L1: extract_blueprint_patch JSON",
         "layer": 1,
         "passed": true,
-        "duration_ms": 2785
+        "duration_ms": 1598
+      },
+      {
+        "name": "L2 Fixture: The Stubborn Lazy Student",
+        "layer": 2,
+        "passed": true,
+        "details": "Clean",
+        "duration_ms": 11213
+      },
+      {
+        "name": "L2 Fixture: The Full Progression Strong Student",
+        "layer": 2,
+        "passed": false,
+        "details": "Turn 2: Expected phase >= 2 but got 1",
+        "duration_ms": 27011
+      },
+      {
+        "name": "L3: Standard Quality Checks",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: conciseness scored 3/5",
+        "duration_ms": 10233,
+        "scores": {
+          "socratic_quality": 5,
+          "conciseness": 3,
+          "targeted_affirmation": 4
+        },
+        "tutor_response": "Good instinct \u2014 you're already engaging with what \"teaching values\" *means*, which is exactly where we need to start. But let's slow down here, because \"standard morals\" is doing a lot of unexamined work.\n\n**Whose** morals? A conservative religious family in Singapore and a secular liberal family in Sweden would both say they're teaching their children \"standard morals\" \u2014 and produce very different people.\n\nSo try again: when the question says **\"values,\"** what exactly does that mean \u2014 and does every parent agree on what those values are?"
+      },
+      {
+        "name": "L3: Evaluating Targeted Affirmation",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: conciseness scored 3/5",
+        "duration_ms": 8192,
+        "scores": {
+          "socratic_quality": 5,
+          "conciseness": 3,
+          "targeted_affirmation": 5
+        },
+        "tutor_response": "That's a genuinely sharp move \u2014 you've identified that \"values\" isn't neutral, it's contested. That's exactly the kind of definitional pressure that separates strong GP answers from weak ones.\n\nBut now you need to commit. The question won't let you stay in the critique forever.\n\nHere's the fork: **either** values are culturally constructed (so parents transmit inherited frameworks, not objective truths) **or** there are some values that transcend culture \u2014 think harm prevention, fairness, basic dignity \u2014 that most frameworks converge on.\n\nWhich version of \"values\" are you going to work with? Pick one and defend why that's the more useful definition for this question."
       }
     ]
   },
   {
-    "timestamp": 1776498622.419424,
-    "timestamp_iso": "2026-04-18T07:50:22Z",
-    "total_tests": 7,
-    "passed_tests": 7,
+    "timestamp": 1776510963.7622368,
+    "timestamp_iso": "2026-04-18T11:16:03Z",
+    "total_tests": 8,
+    "passed_tests": 5,
     "results": [
       {
         "name": "L1: Basic structural input",
         "layer": 1,
         "passed": true,
-        "duration_ms": 4927,
+        "duration_ms": 4950,
         "metadata": {
           "current_phase": 1,
           "question_score": 3,
@@ -136,6 +213,208 @@
           "student_strengths": [],
           "challenge_patterns": [
             "Needs to interrogate question terms before arguing",
+            "Jumped to position without defining key concepts"
+          ]
+        }
+      },
+      {
+        "name": "L1: Unrelated input sequence",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 4996,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 0,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": []
+        }
+      },
+      {
+        "name": "L1: Student veering off topic",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 9931,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Engaging general topic rather than specific question terms",
+            "Jumping to argument construction before defining key terms"
+          ]
+        }
+      },
+      {
+        "name": "L1: extract_blueprint_patch JSON",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 1784
+      },
+      {
+        "name": "L2 Fixture: The Stubborn Lazy Student",
+        "layer": 2,
+        "passed": true,
+        "details": "Clean",
+        "duration_ms": 10751
+      },
+      {
+        "name": "L2 Fixture: The Full Progression Strong Student",
+        "layer": 2,
+        "passed": false,
+        "details": "Turn 2: Expected phase >= 2 but got 1",
+        "duration_ms": 26777
+      },
+      {
+        "name": "L3: Standard Quality Checks",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: conciseness scored 2/5, targeted_affirmation scored 3/5",
+        "duration_ms": 7714,
+        "scores": {
+          "socratic_quality": 5,
+          "conciseness": 2,
+          "targeted_affirmation": 3
+        },
+        "tutor_response": "Good instinct \u2014 you're already engaging with the heart of the question. But before we build any argument, we need to do a Question Autopsy. If your definitions are loose, your argument will drift.\n\nLet's take **\"values\"** first. You said values are \"standard morals\" \u2014 but here's my pushback: **standard by whose measure?** Are honesty and filial piety equally universal? What about values that differ across cultures or religions?\n\nTry again: what exactly do you mean by *values*, and is there a meaningful difference between *having* values and *understanding* them?"
+      },
+      {
+        "name": "L3: Evaluating Targeted Affirmation",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: conciseness scored 2/5",
+        "duration_ms": 12011,
+        "scores": {
+          "socratic_quality": 5,
+          "conciseness": 2,
+          "targeted_affirmation": 5
+        },
+        "tutor_response": "That's a genuinely sharp move \u2014 you've caught the hidden assumption that \"values\" are neutral or universal. That kind of interrogation is exactly what Phase 1 is for.\n\nBut now I want to push you one step further: **does the culturally-constructed nature of values actually undermine the question, or does it sharpen it?**\n\nConsider: even if values are culturally relative, parents still transmit *some* framework \u2014 whether intentionally or not. So maybe the real question isn't *whether* parents teach values, but **whether doing so deliberately is their most important responsibility**, compared to, say, providing safety, education, or emotional security.\n\nSo let me ask you this: **how would you define \"values\" for the purposes of this essay?** Give me a working definition precise enough that you could use it consistently across six paragraphs. Think about: what values *do* (functionally), not just what they *are*."
+      }
+    ]
+  },
+  {
+    "timestamp": 1776512181.147763,
+    "timestamp_iso": "2026-04-18T11:36:21Z",
+    "total_tests": 8,
+    "passed_tests": 5,
+    "results": [
+      {
+        "name": "L1: Basic structural input",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 8593,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Needs to interrogate question terms before arguing",
+            "Moving to position-taking without defining key concepts"
+          ]
+        }
+      },
+      {
+        "name": "L1: Unrelated input sequence",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 4097,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 0,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": []
+        }
+      },
+      {
+        "name": "L1: Student veering off topic",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 5568,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 3,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Drifting from question scope before terms are defined",
+            "Conflating economic provision with value-teaching responsibility"
+          ]
+        }
+      },
+      {
+        "name": "L1: extract_blueprint_patch JSON",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 1675
+      },
+      {
+        "name": "L2 Fixture: The Stubborn Lazy Student",
+        "layer": 2,
+        "passed": true,
+        "details": "Clean",
+        "duration_ms": 14331
+      },
+      {
+        "name": "L2 Fixture: The Full Progression Strong Student",
+        "layer": 2,
+        "passed": false,
+        "details": "Turn 2: Expected phase >= 2 but got 1",
+        "duration_ms": 27393
+      },
+      {
+        "name": "L3: Standard Quality Checks",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: focus scored 3/5, targeted_affirmation scored 3/5, no_direct_answer scored 3/5",
+        "duration_ms": 7747,
+        "scores": {
+          "socratic_quality": 4,
+          "focus": 3,
+          "targeted_affirmation": 3,
+          "no_direct_answer": 3,
+          "phase_appropriateness": 4
+        },
+        "tutor_response": "Good instinct \u2014 you're sensing that the question is about moral formation, and that's the right territory. But let's slow down before we build anything.\n\nYou said \"values are just standard morals.\" Here's my problem with that: **whose** morals? Are honesty and filial piety equally \"standard\" across Singapore, Saudi Arabia, and Sweden? If values are culturally constructed rather than universal, that changes *who* gets to define them \u2014 and whether a parent is even the right person to teach them.\n\n**Try again: what exactly do you mean by \"values\"?** Give me a definition precise enough that it draws a clear line \u2014 what counts as a value, and what doesn't?"
+      },
+      {
+        "name": "L3: Evaluating Targeted Affirmation",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: socratic_quality scored 3/5, focus scored 3/5, no_direct_answer scored 2/5, phase_appropriateness scored 3/5",
+        "duration_ms": 10266,
+        "scores": {
+          "socratic_quality": 3,
+          "focus": 3,
+          "targeted_affirmation": 4,
+          "no_direct_answer": 2,
+          "phase_appropriateness": 3
+        },
+        "tutor_response": "That's a genuinely sharp move \u2014 you've spotted that \"values\" can't be treated as neutral cargo that parents simply hand over. The cultural-construction point is doing real work here.\n\nBut now push it one step further: does it follow that *culturally constructed* automatically means *merely biased*? Or could some values be culturally mediated but still defensible across contexts \u2014 honesty, say, or harm-avoidance?\n\nYour definition is almost there. Try to lock it down: are we defining \"values\" as **universal moral principles**, **culturally specific norms**, or something in between? Your answer will determine the entire scope of your essay."
+      }
+    ]
+  },
+  {
+    "timestamp": 1776512827.649371,
+    "timestamp_iso": "2026-04-18T11:47:07Z",
+    "total_tests": 8,
+    "passed_tests": 5,
+    "results": [
+      {
+        "name": "L1: Basic structural input",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 5440,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 2,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Needs to interrogate question terms before arguing",
             "Jumping to position before defining key concepts"
           ]
         }
@@ -144,30 +423,28 @@
         "name": "L1: Unrelated input sequence",
         "layer": 1,
         "passed": true,
-        "duration_ms": 8634,
+        "duration_ms": 4244,
         "metadata": {
           "current_phase": 1,
-          "question_score": 1,
+          "question_score": 0,
           "insight_unlocked": null,
           "student_strengths": [],
-          "challenge_patterns": [
-            "Attempting to skip Question Autopsy phase",
-            "Hasn't engaged with term definition yet"
-          ]
+          "challenge_patterns": []
         }
       },
       {
         "name": "L1: Student veering off topic",
         "layer": 1,
         "passed": true,
-        "duration_ms": 8132,
+        "duration_ms": 9191,
         "metadata": {
           "current_phase": 1,
-          "question_score": 2,
+          "question_score": 3,
           "insight_unlocked": null,
           "student_strengths": [],
           "challenge_patterns": [
-            "Jumping to argument construction before interrogating question terms"
+            "Drifting from question terms before defining them",
+            "Conflating economic provision with values teaching"
           ]
         }
       },
@@ -175,56 +452,282 @@
         "name": "L1: extract_blueprint_patch JSON",
         "layer": 1,
         "passed": true,
-        "duration_ms": 1631
+        "duration_ms": 1780
       },
       {
-        "name": "L2: The Lazy Student",
+        "name": "L2 Fixture: The Stubborn Lazy Student",
         "layer": 2,
         "passed": true,
-        "duration_ms": 7203,
+        "details": "Clean",
+        "duration_ms": 12086
+      },
+      {
+        "name": "L2 Fixture: The Full Progression Strong Student",
+        "layer": 2,
+        "passed": false,
+        "details": "Turn 2: Expected phase >= 2 but got 1",
+        "duration_ms": 20933
+      },
+      {
+        "name": "L3: Standard Quality Checks",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: no_direct_answer scored 3/5",
+        "reasoning": "socratic_quality: The closing question is genuinely open and forces the student to define their terms without being led to a specific answer. focus: The response is tight overall but 'it's shaky' as a standalone sentence is mild filler that could be cut without losing the challenge. targeted_affirmation: 'You're already sensing that the question is really about what makes a person good' names the precise intellectual move the student made, which is specific and earned. no_direct_answer: The phrase 'that changes who can teach them and whether parents are even the right vehicle' explicitly names the argumentative stakes and implications in a way that pre-loads the student's answer, reducing the thinking work they need to do. phase_appropriateness: The student is at the definitional entry stage with a loose, unexamined premise, and the tutor correctly targets that weak definitional foundation before allowing any further argument-building.",
+        "duration_ms": 12726,
+        "scores": {
+          "socratic_quality": 5,
+          "focus": 4,
+          "targeted_affirmation": 5,
+          "no_direct_answer": 3,
+          "phase_appropriateness": 5,
+          "reasoning": "socratic_quality: The closing question is genuinely open and forces the student to define their terms without being led to a specific answer. focus: The response is tight overall but 'it's shaky' as a standalone sentence is mild filler that could be cut without losing the challenge. targeted_affirmation: 'You're already sensing that the question is really about what makes a person good' names the precise intellectual move the student made, which is specific and earned. no_direct_answer: The phrase 'that changes who can teach them and whether parents are even the right vehicle' explicitly names the argumentative stakes and implications in a way that pre-loads the student's answer, reducing the thinking work they need to do. phase_appropriateness: The student is at the definitional entry stage with a loose, unexamined premise, and the tutor correctly targets that weak definitional foundation before allowing any further argument-building."
+        },
+        "tutor_response": "Good instinct \u2014 you're already sensing that the question is really about what makes a person *good*. That's the right territory.\n\nBut let's slow down before we build anything. \"Values are just standard morals\" is doing a lot of heavy lifting there \u2014 and it's shaky.\n\n**Whose** standard? Singapore's? A conservative religious community's? A secular liberal one? If values are culturally constructed rather than universal, that changes *who* can teach them and *whether* parents are even the right vehicle.\n\nSo try again: **What exactly are \"values\" in this question \u2014 and are they the same everywhere, or do they vary?**"
+      },
+      {
+        "name": "L3: Evaluating Targeted Affirmation",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: focus scored 3/5",
+        "reasoning": "socratic_quality: The central question ('which reading do you want to defend and why?') is genuinely probing and forces a commitment, though the two-option framing slightly narrows the student's thinking space. focus: The response earns its opening affirmation and the 'cuts both ways' tension, but the two-sentence breakdown of each reading re-explains what the student can infer themselves, adding mild redundancy before the actual question. targeted_affirmation: 'You've identified that values can't be treated as neutral' and 'that distinction is doing real argumentative work' name the precise intellectual move the student made, making this specific rather than generic. no_direct_answer: The tutor presents both possible conclusions without endorsing either, leaving the student to choose and justify, so the core work remains undone \u2014 though laying out both options does marginally scaffold the answer space. phase_appropriateness: The student has made a sharp definitional challenge and the tutor correctly responds by demanding commitment and precision rather than affirming the deconstruction and moving on, which fits the early argumentative stage.",
+        "duration_ms": 13422,
+        "scores": {
+          "socratic_quality": 4,
+          "focus": 3,
+          "targeted_affirmation": 4,
+          "no_direct_answer": 4,
+          "phase_appropriateness": 4,
+          "reasoning": "socratic_quality: The central question ('which reading do you want to defend and why?') is genuinely probing and forces a commitment, though the two-option framing slightly narrows the student's thinking space. focus: The response earns its opening affirmation and the 'cuts both ways' tension, but the two-sentence breakdown of each reading re-explains what the student can infer themselves, adding mild redundancy before the actual question. targeted_affirmation: 'You've identified that values can't be treated as neutral' and 'that distinction is doing real argumentative work' name the precise intellectual move the student made, making this specific rather than generic. no_direct_answer: The tutor presents both possible conclusions without endorsing either, leaving the student to choose and justify, so the core work remains undone \u2014 though laying out both options does marginally scaffold the answer space. phase_appropriateness: The student has made a sharp definitional challenge and the tutor correctly responds by demanding commitment and precision rather than affirming the deconstruction and moving on, which fits the early argumentative stage."
+        },
+        "tutor_response": "That's a genuinely sharp move \u2014 you've identified that \"values\" can't be treated as neutral. That distinction between culturally-constructed and universal frameworks is doing real argumentative work.\n\nBut now you need to commit. Here's the tension: **your argument could cut both ways.**\n\nIf values are culturally constructed, that *could* mean parents are uniquely positioned to transmit them \u2014 who better than someone already inside that culture? Or it *could* mean, as you suggest, that parents are just perpetuating bias.\n\n**Which of those two readings do you want to defend \u2014 and why?**\n\nGive me a one-sentence answer: what does \"teaching values\" actually mean, precisely enough that your definition would hold up if I challenged it?"
+      }
+    ]
+  },
+  {
+    "timestamp": 1776513568.6234791,
+    "timestamp_iso": "2026-04-18T11:59:28Z",
+    "total_tests": 8,
+    "passed_tests": 5,
+    "results": [
+      {
+        "name": "L1: Basic structural input",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 4563,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 3,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Needs to interrogate question terms before arguing",
+            "Jumping to argument before defining key concepts"
+          ]
+        }
+      },
+      {
+        "name": "L1: Unrelated input sequence",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 3720,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 0,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": []
+        }
+      },
+      {
+        "name": "L1: Student veering off topic",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 4797,
+        "metadata": {
+          "current_phase": 1,
+          "question_score": 3,
+          "insight_unlocked": null,
+          "student_strengths": [],
+          "challenge_patterns": [
+            "Drifting from question terms before defining them",
+            "Jumping to argument before Question Autopsy is complete"
+          ]
+        }
+      },
+      {
+        "name": "L1: extract_blueprint_patch JSON",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 1401
+      },
+      {
+        "name": "L2 Fixture: The Stubborn Lazy Student",
+        "layer": 2,
+        "passed": true,
+        "details": "Clean",
+        "duration_ms": 11358
+      },
+      {
+        "name": "L2 Fixture: The Full Progression Strong Student",
+        "layer": 2,
+        "passed": false,
+        "details": "Turn 2: Expected phase >= 2 but got 1",
+        "duration_ms": 13843
+      },
+      {
+        "name": "L3: Standard Quality Checks",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: focus scored 3/5, no_direct_answer scored 3/5",
+        "reasoning": "socratic_quality: The final question demanding a working definition is genuinely probing and forces the student to construct rather than receive an answer. focus: The response earns its length in places but the middle paragraph explicitly names the stakes of the universal-vs-constructed binary in a way that does some of the student's analytical work for them, reducing tightness. targeted_affirmation: 'Good instinct \u2014 you're already sensing that values is connected to character formation' names precisely what the student got right rather than offering generic praise. no_direct_answer: The tutor explicitly articulates the two-horn binary (universal vs. socially constructed) and spells out the logical consequence of each horn ('if values are universal, then any parent teaching them is doing the same job'), which scaffolds the reasoning the student should be discovering independently. phase_appropriateness: The student offered a vague, underdeveloped opening claim, and the tutor correctly targets definitional clarity as the necessary first move before any argument can be built.",
+        "duration_ms": 14295,
+        "scores": {
+          "socratic_quality": 5,
+          "focus": 3,
+          "targeted_affirmation": 5,
+          "no_direct_answer": 3,
+          "phase_appropriateness": 5,
+          "reasoning": "socratic_quality: The final question demanding a working definition is genuinely probing and forces the student to construct rather than receive an answer. focus: The response earns its length in places but the middle paragraph explicitly names the stakes of the universal-vs-constructed binary in a way that does some of the student's analytical work for them, reducing tightness. targeted_affirmation: 'Good instinct \u2014 you're already sensing that values is connected to character formation' names precisely what the student got right rather than offering generic praise. no_direct_answer: The tutor explicitly articulates the two-horn binary (universal vs. socially constructed) and spells out the logical consequence of each horn ('if values are universal, then any parent teaching them is doing the same job'), which scaffolds the reasoning the student should be discovering independently. phase_appropriateness: The student offered a vague, underdeveloped opening claim, and the tutor correctly targets definitional clarity as the necessary first move before any argument can be built."
+        },
+        "tutor_response": "Good instinct \u2014 you're already sensing that \"values\" is connected to character formation. But let's slow down before we build anything.\n\n**\"Values are just standard morals\"** \u2014 I want to push on that word *standard*. Standard according to whom? A conservative religious parent and a secular liberal parent would both say they're teaching their child to be a \"good person,\" but they might teach completely opposite things about, say, gender roles or religious duty.\n\nSo here's the question: **are values universal, or are they socially constructed?**\n\nYour answer to that changes everything \u2014 because if values are universal, then any parent teaching them is doing the same job. But if they're culturally specific, then the question becomes: *whose* values, and *who decided* they're the right ones to teach?\n\nTake a position: what do *you* think values means, precisely enough that we could use it as a working definition for this essay?"
+      },
+      {
+        "name": "L3: Evaluating Targeted Affirmation",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: focus scored 3/5, no_direct_answer scored 3/5",
+        "reasoning": "socratic_quality: The final question \u2014 define values without resolving objectivity \u2014 is genuinely probing and forces the student to commit to a position rather than stay in abstract critique. focus: The middle paragraph explaining that values can be 'functional' even if constructed is largely explanatory filler that does the student's thinking for them; the response would be tighter without it. targeted_affirmation: 'You've already spotted that values smuggles in a claim about universality it hasn't earned' specifically names what the student did correctly \u2014 identifying an unearned assumption \u2014 which is precise rather than generic. no_direct_answer: The tutor explicitly tells the student that values being culturally constructed can still be 'functional' and lists the reasons (socialisation, moral vocabulary, navigating relationships), which scaffolds a key line of argument the student should have developed independently. phase_appropriateness: Redirecting to the essay question's actual demand ('most important responsibility') is correctly calibrated \u2014 the student was drifting into philosophy of ethics rather than engaging with the GP prompt \u2014 but the functional values hint partially undermines this.",
+        "duration_ms": 14238,
+        "scores": {
+          "socratic_quality": 5,
+          "focus": 3,
+          "targeted_affirmation": 4,
+          "no_direct_answer": 3,
+          "phase_appropriateness": 4,
+          "reasoning": "socratic_quality: The final question \u2014 define values without resolving objectivity \u2014 is genuinely probing and forces the student to commit to a position rather than stay in abstract critique. focus: The middle paragraph explaining that values can be 'functional' even if constructed is largely explanatory filler that does the student's thinking for them; the response would be tighter without it. targeted_affirmation: 'You've already spotted that values smuggles in a claim about universality it hasn't earned' specifically names what the student did correctly \u2014 identifying an unearned assumption \u2014 which is precise rather than generic. no_direct_answer: The tutor explicitly tells the student that values being culturally constructed can still be 'functional' and lists the reasons (socialisation, moral vocabulary, navigating relationships), which scaffolds a key line of argument the student should have developed independently. phase_appropriateness: Redirecting to the essay question's actual demand ('most important responsibility') is correctly calibrated \u2014 the student was drifting into philosophy of ethics rather than engaging with the GP prompt \u2014 but the functional values hint partially undermines this."
+        },
+        "tutor_response": "That's a genuinely sharp move \u2014 you've already spotted that \"values\" smuggles in a claim about universality that it hasn't earned. That's exactly the kind of interrogation that separates strong GP responses from weak ones.\n\nBut now push it one step further: does your argument *need* values to be objective to matter?\n\nEven if values are culturally constructed, parents transmitting them to children might still be *functional* \u2014 it socialises children into their community, gives them a moral vocabulary, helps them navigate relationships. The question isn't asking whether values are universal. It's asking whether *teaching* them is a parent's **most important** responsibility.\n\nSo: can you give me a definition of \"values\" that is precise enough to commit to, without needing to resolve the objectivity debate? What would you say values *are*, for the purposes of this essay?"
+      }
+    ]
+  },
+  {
+    "timestamp": 1776513920.0453818,
+    "timestamp_iso": "2026-04-18T12:05:20Z",
+    "total_tests": 8,
+    "passed_tests": 6,
+    "results": [
+      {
+        "name": "L1: Basic structural input",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 4607,
         "metadata": {
           "current_phase": 1,
           "question_score": 2,
           "insight_unlocked": null,
           "student_strengths": [],
           "challenge_patterns": [
-            "Definition too broad \u2014 'values = morals' collapses a distinction that matters for the argument",
-            "Has not interrogated question terms before arguing"
+            "Needs to interrogate question terms before arguing",
+            "Jumping to argument before defining key concepts"
           ]
         }
       },
       {
-        "name": "L2: The Strong Student",
-        "layer": 2,
+        "name": "L1: Unrelated input sequence",
+        "layer": 1,
         "passed": true,
-        "duration_ms": 18247,
+        "duration_ms": 3959,
         "metadata": {
           "current_phase": 1,
-          "question_score": 4,
+          "question_score": 0,
           "insight_unlocked": null,
-          "student_strengths": [
-            "Shows awareness of temporal dimension in argument \u2014 recognising that responsibility can shift is a sophisticated structural move"
-          ],
-          "challenge_patterns": [
-            "Definition makes an unsupported philosophical claim",
-            "Key terms 'most important responsibility' and 'parent' left undefined"
-          ]
+          "student_strengths": [],
+          "challenge_patterns": []
         }
       },
       {
-        "name": "L2: The Stuck Student",
-        "layer": 2,
+        "name": "L1: Student veering off topic",
+        "layer": 1,
         "passed": true,
-        "duration_ms": 3152,
+        "duration_ms": 7423,
         "metadata": {
           "current_phase": 1,
-          "question_score": 2,
+          "question_score": 3,
           "insight_unlocked": null,
           "student_strengths": [],
           "challenge_patterns": [
-            "Needs to push beyond surface-level definitions"
+            "Drifting from question terms before defining them",
+            "Conflating economic provision with values transmission"
           ]
         }
+      },
+      {
+        "name": "L1: extract_blueprint_patch JSON",
+        "layer": 1,
+        "passed": true,
+        "duration_ms": 1913
+      },
+      {
+        "name": "L2 Fixture: The Stubborn Lazy Student",
+        "layer": 2,
+        "passed": true,
+        "details": "Clean",
+        "duration_ms": 11215
+      },
+      {
+        "name": "L2 Fixture: The Full Progression Strong Student",
+        "layer": 2,
+        "passed": false,
+        "details": "Turn 2: Expected phase >= 2 but got 1",
+        "duration_ms": 21248
+      },
+      {
+        "name": "L3: Standard Quality Checks",
+        "layer": 3,
+        "passed": true,
+        "duration_ms": 14000,
+        "reasoning": "socratic_quality: The question is genuinely probing \u2014 asking the student to define 'values' precisely enough to distinguish it from related acts forces real conceptual work without leading to an answer. focus: The 'Question Autopsy' framing and the examples (sharing toys, praying five times a day) are purposeful, but 'Your answer to that changes everything' is a slight flag-plant that could be trimmed without losing the core challenge. targeted_affirmation: 'Good instinct \u2014 you're already thinking about what parenting is for' names the correct domain the student was operating in (moral formation / purpose of parenting) rather than offering empty praise, which qualifies as specific. no_direct_answer: The tutor names the stake ('that changes who gets to define what a parent should teach') which per the rubric is acceptable, but the framing 'socially constructed \u2014 different in Singapore versus Saudi Arabia versus Sweden' edges toward implying the answer rather than letting the student discover it. phase_appropriateness: The student offered a vague first-turn claim; interrogating the key term 'values' before any argument is built is exactly the right calibration for this early phase.",
+        "scores": {
+          "socratic_quality": 5,
+          "focus": 4,
+          "targeted_affirmation": 4,
+          "no_direct_answer": 4,
+          "phase_appropriateness": 5,
+          "reasoning": "socratic_quality: The question is genuinely probing \u2014 asking the student to define 'values' precisely enough to distinguish it from related acts forces real conceptual work without leading to an answer. focus: The 'Question Autopsy' framing and the examples (sharing toys, praying five times a day) are purposeful, but 'Your answer to that changes everything' is a slight flag-plant that could be trimmed without losing the core challenge. targeted_affirmation: 'Good instinct \u2014 you're already thinking about what parenting is for' names the correct domain the student was operating in (moral formation / purpose of parenting) rather than offering empty praise, which qualifies as specific. no_direct_answer: The tutor names the stake ('that changes who gets to define what a parent should teach') which per the rubric is acceptable, but the framing 'socially constructed \u2014 different in Singapore versus Saudi Arabia versus Sweden' edges toward implying the answer rather than letting the student discover it. phase_appropriateness: The student offered a vague first-turn claim; interrogating the key term 'values' before any argument is built is exactly the right calibration for this early phase."
+        },
+        "tutor_response": "Good instinct \u2014 you're already thinking about what parenting is *for*. But before we build any argument, we need to do a Question Autopsy. Let's slow down and interrogate the terms first.\n\nYou said \"values are just standard morals.\" Here's my push: **whose** morals? Are there morals that are truly universal across all cultures and religions, or are \"values\" actually socially constructed \u2014 different in Singapore versus Saudi Arabia versus Sweden? Your answer to that changes *everything* about who gets to define what a parent should teach.\n\nSo let me ask you directly: **what exactly do you mean by \"values\"?** Give me a definition precise enough that someone could use it to distinguish \"teaching values\" from, say, teaching a child to share their toys or to pray five times a day.",
+        "conversation_history": [
+          {
+            "role": "user",
+            "content": "I think the most important thing is that parents teach us how to be good people. Values are just standard morals."
+          }
+        ],
+        "user_question": "The most important responsibility of a parent is to teach values. Discuss"
+      },
+      {
+        "name": "L3: Evaluating Targeted Affirmation",
+        "layer": 3,
+        "passed": false,
+        "details": "LLM Judge Failed: focus scored 3/5",
+        "reasoning": "socratic_quality: The tutor asks the student to commit to a working definition rather than just destabilising, which is a genuine probe that forces productive thinking without implying an answer. focus: The opening sentence of praise and the meta-commentary about examiners ('exactly what examiners reward') is filler that delays the real challenge; the response could be tightened by cutting straight to the bidirectional tension. targeted_affirmation: 'You've spotted that values smuggles in a claim about universality' is specific enough to name the exact move the student made, though 'genuinely sharp move' edges toward generic flattery. no_direct_answer: The tutor introduces the bidirectional framing ('uniquely positioned to transmit them, precisely because they share the child's cultural context') which leans toward scaffolding one horn of the dilemma rather than leaving both equally open for the student to discover. phase_appropriateness: The student is in early definitional territory and the tutor correctly redirects toward committing to a working definition before argument-building, which is exactly the right move at this phase.",
+        "duration_ms": 13911,
+        "scores": {
+          "socratic_quality": 5,
+          "focus": 3,
+          "targeted_affirmation": 4,
+          "no_direct_answer": 4,
+          "phase_appropriateness": 5,
+          "reasoning": "socratic_quality: The tutor asks the student to commit to a working definition rather than just destabilising, which is a genuine probe that forces productive thinking without implying an answer. focus: The opening sentence of praise and the meta-commentary about examiners ('exactly what examiners reward') is filler that delays the real challenge; the response could be tightened by cutting straight to the bidirectional tension. targeted_affirmation: 'You've spotted that values smuggles in a claim about universality' is specific enough to name the exact move the student made, though 'genuinely sharp move' edges toward generic flattery. no_direct_answer: The tutor introduces the bidirectional framing ('uniquely positioned to transmit them, precisely because they share the child's cultural context') which leans toward scaffolding one horn of the dilemma rather than leaving both equally open for the student to discover. phase_appropriateness: The student is in early definitional territory and the tutor correctly redirects toward committing to a working definition before argument-building, which is exactly the right move at this phase."
+        },
+        "tutor_response": "That's a genuinely sharp move \u2014 you've spotted that \"values\" smuggles in a claim about universality that may not hold. That kind of definitional pressure is exactly what examiners reward.\n\nBut now you need to commit, not just destabilise. Here's the tension: **your observation could actually cut both ways.**\n\nIf values are culturally constructed, does that make them *less* worth teaching \u2014 or does it mean parents are *uniquely positioned* to transmit them, precisely because they share the child's cultural context?\n\nSo let me press you: **for the purposes of this essay, how will you define \"values\"?** Not what they \"really are\" philosophically \u2014 but what working definition will let you build the sharpest argument about parental responsibility?",
+        "conversation_history": [
+          {
+            "role": "user",
+            "content": "Values means moral frameworks, but who defines those frameworks? If it's culturally constructed, then parents are just passing down cultural biases, not objective 'values'."
+          }
+        ],
+        "user_question": "The most important responsibility of a parent is to teach values. Discuss"
       }
     ]
   }

@@ -1,0 +1,29 @@
+{
+  "name": "L2 Fixture: The Full Progression Strong Student",
+  "question": "The most important responsibility of a parent is to teach values. Discuss",
+  "turns": [
+    {
+      "student": "Values means moral frameworks. My provisional thesis: while parents bear primary responsibility to impart foundational moral frameworks early on, the responsibility logically shifts to educational institutions as society modernises.",
+      "assistant_fixture": "That's a well-defined starting point with a clear stance and definition. If the responsibility shifts to institutions as society modernises, what specific structural change triggers that shift?",
+      "assert_conditions": {
+        "student_strengths_not_empty": true,
+        "phase_minimum": 1
+      }
+    },
+    {
+      "student": "I mean that nuclear families are structurally declining in modern cities, so schools literally fill the gap that working parents leave behind. This makes the school's role functionally more important.",
+      "assistant_fixture": "Your analytical link between family structures and institutional roles is doing real work here. You've built a strong case for why schools take over. Before we go further \u2014 what is the strongest counterargument someone would make here?",
+      "assert_conditions": {
+        "student_strengths_not_empty": true,
+        "phase_minimum": 2
+      }
+    },
+    {
+      "student": "A counterargument would be that schools are designed to teach civic values and standardized obedience, not personal or internal moral compasses. The latter remains structurally with parents precisely because schools are too impersonal.",
+      "assistant_fixture": "That distinction between civic and personal values is extremely sharp. Your Blueprint is ready. You have everything you need to write this essay.",
+      "assert_conditions": {
+        "phase_minimum": 3
+      }
+    }
+  ]
+}
