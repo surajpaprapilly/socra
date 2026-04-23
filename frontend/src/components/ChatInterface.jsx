@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSession } from '../context/SessionContext';
 import BlueprintPanel from './learn/BlueprintPanel';
 import NudgeButton from './NudgeButton';
+import MilestoneCard from './MilestoneCard';
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -76,6 +77,15 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     const [tension, setTension] = useState(null);
     const [evidence, setEvidence] = useState([]);
 
+    // Milestone card queue
+    const [milestoneQueue, setMilestoneQueue] = useState([]);
+    const handleMilestoneReached = useCallback((flag) => {
+        setMilestoneQueue(q => [...q, flag]);
+    }, []);
+    const handleMilestoneDismiss = useCallback(() => {
+        setMilestoneQueue(q => q.slice(1));
+    }, []);
+
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -128,11 +138,15 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                     if (meta.current_phase) {
                                         if (meta.current_phase > phase && meta.current_phase <= 5) {
                                             setPhase(meta.current_phase);
-                                            // Render interstitial banner in chat when phases change
                                             setMessages(prev => [...prev, { role: 'system_banner', content: getPhaseBanner(meta.current_phase) }]);
+                                            // Autopsy milestone: Socra moving to phase 2 is the
+                                            // authoritative signal that all terms are defined.
+                                            if (meta.current_phase === 2) {
+                                                setMilestoneQueue(q => [...q, 'question_autopsy_complete']);
+                                            }
                                         }
                                         if (meta.current_phase > 5) {
-                                            setIsFinished(true); // Trigger payoff screen
+                                            setIsFinished(true);
                                         }
                                     }
                                     if (meta.question_score !== undefined) {
@@ -266,6 +280,12 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                     <div ref={messagesEndRef} />
                 </div>
 
+                {/* Milestone Card overlay */}
+                <MilestoneCard
+                    milestone={milestoneQueue[0] || null}
+                    onDismiss={handleMilestoneDismiss}
+                />
+
                 {/* Input Area */}
                     <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-background via-background to-transparent pt-12 pb-8 px-8 z-20">
                     <form onSubmit={handleSubmit} className="relative group w-full xl:max-w-4xl">
@@ -297,7 +317,11 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
 
             {/* 45% Blueprint Panel */}
             <div className="w-full md:w-[45%] h-[50vh] md:h-full bg-[#11100D] flex flex-col relative overflow-y-auto overflow-x-hidden z-20">
-                <BlueprintPanel sessionId={sessionId} initialQuestion={initialQuestion} />
+                <BlueprintPanel
+                    sessionId={sessionId}
+                    initialQuestion={initialQuestion}
+                    onMilestoneReached={handleMilestoneReached}
+                />
             </div>
         </div>
     );
