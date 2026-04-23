@@ -337,11 +337,21 @@ async def list_sessions(current_user: dict = Depends(get_current_user)):
         sq = bp.get("session_quality", {})
         paragraphs = bp.get("paragraphs", [])
         turn = s["turn"]
-        # Auto-heal legacy sessions by inspecting physical blueprint progress
+        # Auto-heal legacy sessions by inspecting physical blueprint progress.
+        # Only reach turn=6 (complete) when ALL quality flags are met — not just
+        # when there are 2 paragraphs, which fires too early mid-session.
         valid_paras = len([p for p in paragraphs if p.get("topic_sentence")])
         if turn < 6:
-            if bp.get("thesis") and valid_paras >= 2:
+            all_quality_met = (
+                sq.get("question_autopsy_complete") and
+                sq.get("both_sides_argued") and
+                sq.get("thesis_refined") and
+                sq.get("analytical_links_count", 0) >= 3
+            )
+            if all_quality_met:
                 turn = 6
+            elif bp.get("thesis") and valid_paras >= 2:
+                turn = 5
             elif valid_paras >= 2:
                 turn = 4
             elif valid_paras >= 1:
@@ -389,9 +399,18 @@ async def get_session(session_id: str, current_user: dict = Depends(get_current_
 
     turn = session["turn"]
     if turn < 6 and blueprint:
+        sq_heal = blueprint.get("session_quality", {})
         valid_paras = len([p for p in blueprint.get("paragraphs", []) if p.get("topic_sentence")])
-        if blueprint.get("thesis") and valid_paras >= 2:
+        all_quality_met = (
+            sq_heal.get("question_autopsy_complete") and
+            sq_heal.get("both_sides_argued") and
+            sq_heal.get("thesis_refined") and
+            sq_heal.get("analytical_links_count", 0) >= 3
+        )
+        if all_quality_met:
             turn = 6
+        elif blueprint.get("thesis") and valid_paras >= 2:
+            turn = 5
         elif valid_paras >= 2:
             turn = 4
         elif valid_paras >= 1:

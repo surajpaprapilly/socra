@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchWithAuth } from '../../lib/supabase';
 
 // Deep merge helper that ensures fields don't accidentally revert to null when the backend returns nulls due to partial LLM outputs
@@ -62,10 +62,11 @@ const mergeBlueprintState = (prev, incoming) => {
     return merged;
 };
 
-export default function BlueprintPanel({ sessionId, initialQuestion }) {
+export default function BlueprintPanel({ sessionId, initialQuestion, onMilestoneReached }) {
     const [blueprint, setBlueprint] = useState(null);
     const [isPolling, setIsPolling] = useState(true);
     const [exportError, setExportError] = useState(false);
+    const previousSqRef = useRef(null);
     
     // Local checklist state for interactivity
     const [localChecklist, setLocalChecklist] = useState([
@@ -100,12 +101,32 @@ export default function BlueprintPanel({ sessionId, initialQuestion }) {
                 if (res.ok) {
                     const data = await res.json();
                     setBlueprint(prev => mergeBlueprintState(prev, data));
-                    
-                    // Check if polling should stop
+
                     if (data.session_quality) {
                         const sq = data.session_quality;
+
+                        // Stop polling when fully complete
                         if (sq.question_autopsy_complete && sq.both_sides_argued && sq.thesis_refined && sq.analytical_links_count >= 3) {
                             setIsPolling(false);
+                        }
+
+                        // Detect flag transitions and fire milestone events.
+                        // On the very first poll, just snapshot the state — don't fire cards
+                        // for flags that were already true (e.g. on session resume).
+                        const prev = previousSqRef.current;
+                        if (prev === null) {
+                            // First poll: snapshot state without firing — prevents re-firing on resume
+                            previousSqRef.current = { ...sq };
+                        } else if (onMilestoneReached) {
+                            // question_autopsy_complete fires from the Socra phase 1→2
+                            // transition in ChatInterface (more authoritative than this flag).
+                            if (!prev.both_sides_argued && sq.both_sides_argued)
+                                onMilestoneReached('both_sides_argued');
+                            if (!prev.thesis_refined && sq.thesis_refined)
+                                onMilestoneReached('thesis_refined');
+                            if ((prev.analytical_links_count || 0) < 3 && (sq.analytical_links_count || 0) >= 3)
+                                onMilestoneReached('analytical_links_count');
+                            previousSqRef.current = { ...sq };
                         }
                     }
                 }
