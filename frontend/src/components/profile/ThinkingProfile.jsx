@@ -1,13 +1,11 @@
 import { useMemo } from 'react';
 import { getConflictInfoFromQuestion } from './ProfileThemeMatcher';
 
-export default function ThinkingProfile({ sessions }) {
+export default function ThinkingProfile({ sessions, userMemory }) {
     
     // Aggregate metadata
     const { strongThemes, argumentStrengths, pointsToWorkOn } = useMemo(() => {
         const themeScores = {};
-        const strengthsMap = {};
-        const challengesMap = {};
 
         sessions.forEach(s => {
             const { themeId, theme } = getConflictInfoFromQuestion(s.question);
@@ -17,32 +15,29 @@ export default function ThinkingProfile({ sessions }) {
                 themeScores[themeId] = { id: themeId, label: theme, score: 0 };
             }
             themeScores[themeId].score += (s.turn || 1);
-
-            // Aggregate Explicit AI Metadata Strengths / Challenges
-            const snap = s.blueprint_snapshot;
-            if (snap) {
-                if (snap.student_strengths) {
-                    snap.student_strengths.forEach(str => {
-                        strengthsMap[str] = (strengthsMap[str] || 0) + 1;
-                    });
-                }
-                if (snap.challenge_patterns) {
-                    snap.challenge_patterns.forEach(c => {
-                        challengesMap[c] = (challengesMap[c] || 0) + 1;
-                    });
-                }
-            }
         });
 
         // Sort descending
         const topThemes = Object.values(themeScores).sort((a,b) => b.score - a.score).slice(0, 3);
         
-        // Return pure sorted arrays of keys
-        const sortedStrengths = Object.keys(strengthsMap).sort((a,b) => strengthsMap[b] - strengthsMap[a]).slice(0, 3);
-        const sortedChallenges = Object.keys(challengesMap).sort((a,b) => challengesMap[b] - challengesMap[a]).slice(0, 3);
+        let sortedStrengths = [];
+        let sortedChallenges = [];
+
+        if (userMemory) {
+            sortedStrengths = userMemory.persistent_strengths || [];
+            sortedChallenges = userMemory.recurring_challenges || [];
+        }
 
         return { strongThemes: topThemes, argumentStrengths: sortedStrengths, pointsToWorkOn: sortedChallenges };
-    }, [sessions]);
+    }, [sessions, userMemory]);
+
+    const CORE_MOVES = [
+        { id: "problem_deconstruction", label: "Problem Deconstruction" },
+        { id: "perspective_taking", label: "Perspective-Taking" },
+        { id: "nuance_positionality", label: "Nuance & Positionality" },
+        { id: "analytical_depth", label: "Analytical Depth" },
+        { id: "cogent_insight", label: "Cogent Insight" }
+    ];
 
     return (
         <div className="flex flex-col md:flex-row gap-8 w-full">
@@ -82,7 +77,7 @@ export default function ThinkingProfile({ sessions }) {
                 <h3 className="text-xs font-mono uppercase tracking-widest text-textMuted mb-5 pb-2 border-b border-borderDark/40">Areas to Develop</h3>
                 
                 {pointsToWorkOn.length > 0 ? (
-                    <ul className="space-y-4">
+                    <ul className="space-y-4 mb-8">
                         {pointsToWorkOn.map((pt, idx) => (
                             <li key={idx} className="flex items-start text-sm font-serif group">
                                 <span className="text-textMuted/40 mt-1 mr-3 text-[10px] opacity-60">△</span>
@@ -91,8 +86,29 @@ export default function ThinkingProfile({ sessions }) {
                         ))}
                     </ul>
                 ) : (
-                    <p className="text-xs font-mono text-textMuted/40 italic">No consistent challenge patterns emerged yet. Keep engaging deeply.</p>
+                    <p className="text-xs font-mono text-textMuted/40 italic mb-8">No consistent challenge patterns emerged yet. Keep engaging deeply.</p>
                 )}
+
+                <h3 className="text-xs font-mono uppercase tracking-widest text-textMuted mb-5 pb-2 border-b border-borderDark/40">Core Thinking Moves</h3>
+                <div className="grid grid-cols-1 gap-3">
+                    {CORE_MOVES.map((move) => {
+                        const masteryData = userMemory?.moves_mastery?.[move.id] || { count: 0 };
+                        const isMastered = masteryData.count >= 3;
+                        return (
+                            <div key={move.id} className="flex items-center justify-between p-2 border border-borderDark/30 bg-background/50">
+                                <span className={`text-sm font-mono ${isMastered ? 'text-sage' : 'text-textDefault/80'}`}>{move.label}</span>
+                                <div className="flex space-x-1">
+                                    {[1, 2, 3].map(i => (
+                                        <div 
+                                            key={i} 
+                                            className={`w-2 h-2 rounded-full ${i <= masteryData.count ? (isMastered ? 'bg-sage border border-sage' : 'bg-amber border border-amber') : 'bg-transparent border border-borderDark/50'}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
         </div>

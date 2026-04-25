@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSession } from '../context/SessionContext';
 import { fetchWithAuth } from '../lib/supabase';
 
-export default function FinalBlueprint({ insights, blueprint }) {
+export default function FinalBlueprint({ insights, blueprint, platoReflection }) {
     const [copied, setCopied] = useState(false);
     const [savedToBank, setSavedToBank] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -89,6 +89,13 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
                          </h3>
                     )}
                 </div>
+
+                {platoReflection && (
+                    <div className="mb-10 p-6 border border-amber/30 bg-amber/5 rounded-sm relative">
+                        <div className="absolute -top-3 left-6 bg-[#11100D] px-2 font-mono text-[10px] text-amber uppercase tracking-widest">Plato Says</div>
+                        <p className="font-serif text-lg text-amber/90 italic leading-relaxed">"{platoReflection}"</p>
+                    </div>
+                )}
 
                 {blueprint ? (
                     <div className="space-y-6 font-serif text-lg text-textDefault/90 mb-12">
