@@ -1,0 +1,460 @@
+{
+  "run_id": "weak_20260425_174503",
+  "student_type": "weak",
+  "question": "The most important responsibility of a parent is to teach values. Discuss",
+  "turns": 15,
+  "timestamp_iso": "2026-04-25T09:45:03Z",
+  "opening_socra_message": "Good \u2014 let's start by taking the question apart before we touch any arguments.\n\nThe command word here is **\"Discuss\"**. Before we go further: what do you think Cambridge is asking you to do when it says \"Discuss\"? What does that word demand of your essay?",
+  "conversation": [
+    {
+      "turn": 1,
+      "student": "I think it means like... talk about the topic. Just discuss it, like give your views on it.",
+      "socra": "\n\nThat's a reasonable instinct \u2014 but \"Discuss\" is doing more specific work than that. It's actually telling you the essay needs to **consider multiple perspectives** and arrive at a **reasoned judgment**. So it's not just \"here are my views\" \u2014 it's \"here are the competing positions, and here is why I land where I do.\"\n\nThat matters because it means your essay must genuinely engage the other side \u2014 not just acknowledge it and move on.\n\nNow let's get into the question itself. Read it again: **\"The most important responsibility of a parent is to teach values.\"**\n\nWhat are the **loaded terms** \u2014 the words or phrases that need defining before you can argue anything? Take a pass at identifying them.",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 1,
+        "insight_unlocked": null,
+        "student_strengths": [],
+        "challenge_patterns": [
+          "Needs to unpack command words more precisely"
+        ],
+        "moves_practiced": []
+      },
+      "judge_scores": {
+        "socratic_quality": 4,
+        "focus": 3,
+        "targeted_affirmation": 4,
+        "no_direct_answer": 2,
+        "phase_appropriateness": 4,
+        "reasoning": "socratic_quality: The closing question about 'loaded terms' is genuinely probing and open-ended, forcing the student to do analytical work without being led. focus: The first paragraph explaining what 'Discuss' means is too expository \u2014 the tutor lectures rather than questions, consuming three sentences to deliver information the student should have been made to discover. targeted_affirmation: Praise is correctly withheld given the student's weak answer, and 'reasonable instinct' is appropriately minimal without being falsely generic. no_direct_answer: The tutor directly states what 'Discuss' means \u2014 'consider multiple perspectives and arrive at a reasoned judgment' and 'your essay must genuinely engage the other side' \u2014 handing over the answer rather than drawing it out through questioning. phase_appropriateness: Moving from command word to key terms is the correct next step at this early stage, and the pivot is well-timed given the student's surface-level response."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 2,
+      "student": "Um... I think like... \"values\" is one? Because values means like, the things you believe in and think are right.",
+      "socra": "\n\nGood \u2014 \"values\" is definitely one, and you're right that it needs defining. We'll come back to sharpen that definition in a moment.\n\nBut first \u2014 are there other loaded terms in the question? Look at the full phrase: **\"The most important responsibility of a parent is to teach values.\"**\n\nWhat other words or phrases are doing heavy argumentative work here?",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 2,
+        "insight_unlocked": null,
+        "student_strengths": [],
+        "challenge_patterns": [
+          "Needs to push definitions beyond surface-level descriptions"
+        ],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 5,
+        "focus": 4,
+        "targeted_affirmation": 3,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 5,
+        "reasoning": "socratic_quality: The question 'what other words or phrases are doing heavy argumentative work here?' is genuinely probing and forces the student to scan the full sentence analytically without any implied answer. focus: The response is tight but the opening clause 'We'll come back to sharpen that definition in a moment' is mild filler \u2014 it defers without adding pressure or insight. targeted_affirmation: 'Good \u2014 values is definitely one, and you're right that it needs defining' confirms the student is correct but doesn't name what specifically was good about the move (e.g. spotting a term that shifts depending on cultural context), making it functional but not sharply specific. no_direct_answer: The tutor gives nothing away \u2014 no hint about which terms matter or why, leaving all the analytical work to the student. phase_appropriateness: The student is mid-keyword-identification and the tutor correctly keeps them in that phase, pressing for completeness before moving to definition-sharpening."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 3,
+      "student": "Um... maybe \"most important\"? Like because there could be other responsibilities too that are also important.",
+      "socra": "\n\n\n\nExactly right \u2014 and notice that \"most important\" and \"responsibility\" are doing **one job together**. The question isn't just asking whether parents have responsibilities \u2014 it's making a **ranking claim**: that teaching values sits above everything else. That's the claim you'll need to defend or challenge.\n\nSo we have three loaded terms so far:\n- **Most important responsibility**\n- **Parent**\n- **Teach values**\n\nOne more question before we define them: is **\"parent\"** as straightforward as it looks? Who counts as a parent \u2014 and does it matter for this question?",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 3,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Identifies key argumentative terms unprompted"
+        ],
+        "challenge_patterns": [],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 4,
+        "focus": 3,
+        "targeted_affirmation": 2,
+        "no_direct_answer": 4,
+        "phase_appropriateness": 4,
+        "reasoning": "socratic_quality: The question about who counts as a parent is genuinely probing and opens up real complexity without telegraphing the answer. focus: The response includes a bullet-point summary of terms already identified, which restates ground covered rather than advancing \u2014 this is filler that could be cut. targeted_affirmation: 'Exactly right' is generic praise with no specificity about what the student correctly identified (the ranking claim embedded in 'most important'). no_direct_answer: The tutor names the three terms and frames 'most important responsibility' as a ranking claim, which edges toward scaffolding but stops short of answering \u2014 the student still has to do the definitional work. phase_appropriateness: Moving to interrogate 'parent' is the right next step after identifying the loaded terms, maintaining appropriate pace in the unpacking phase."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 4,
+      "student": "I guess... a parent is just like, your mum or dad? I'm not sure why it matters who counts as a parent.",
+      "socra": "\n\n\n\nThink about this: a child raised by grandparents, or by the state, or by two fathers \u2014 does the question still apply to them? And if yes, does that change what \"teaching values\" actually looks like in practice?\n\nThe reason it matters is this: **if \"parent\" is too narrow, your argument might only apply to a small slice of families.** A broader definition makes your argument more robust.\n\nSo \u2014 would you revise your definition? Who counts as a parent for the purposes of this essay?",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 2,
+        "insight_unlocked": null,
+        "student_strengths": [],
+        "challenge_patterns": [
+          "Needs prompting to identify loaded terms independently"
+        ],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 4,
+        "focus": 3,
+        "targeted_affirmation": 5,
+        "no_direct_answer": 3,
+        "phase_appropriateness": 5,
+        "reasoning": "socratic_quality: The question 'would you revise your definition?' is genuinely probing and forces the student to grapple with edge cases, though it's slightly led by the examples given. focus: The middle paragraph ('The reason it matters is this...') over-explains the stakes rather than letting the question do the work \u2014 it could be cut without losing the challenge. targeted_affirmation: No praise was given, which is correct since the student's answer was weak and unreflective. no_direct_answer: The tutor tells the student explicitly that 'a broader definition makes your argument more robust,' which partially scaffolds the answer rather than letting the student discover why definitional scope matters. phase_appropriateness: The conversation is in the unpacking-terms phase and the tutor correctly pushes on 'parent' before moving to argument construction \u2014 well-calibrated to where the student is."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 5,
+      "student": "I guess... a parent is like, anyone who raises a child? Like someone who takes care of them. I'm not sure how that changes anything though.",
+      "socra": "\n\n\n\nGood \u2014 \"anyone who raises a child\" is a workable definition. Here's why it matters: it means your arguments need to hold across **all** caregiving contexts, not just nuclear families. That's actually a strength \u2014 it makes your essay harder to attack.\n\nNow let's sharpen the two terms that will do the most work. Start with **\"teach values\"** \u2014 you said earlier it means \"things you believe in and think are right.\" But here's the push: is *teaching* values the same as a child *having* values? Because a parent could teach values that the child never internalises. Does the responsibility end at teaching, or at the outcome?",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 3,
+        "insight_unlocked": null,
+        "student_strengths": [],
+        "challenge_patterns": [
+          "Needs to connect definitional choices to argumentative consequences"
+        ],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 5,
+        "focus": 4,
+        "targeted_affirmation": 4,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 5,
+        "reasoning": "The closing question \u2014 whether responsibility ends at teaching or at outcome \u2014 is genuinely probing and forces the student to think about the locus of parental duty without supplying an answer. The response is tight but the explanation of why the broader definition matters ('harder to attack') edges toward coaching rather than pure questioning, costing a focus point. The affirmation 'workable definition' is specific enough to signal what succeeded without being generic praise, though it doesn't name exactly what made the definition strong. The tutor never implies where the distinction between teaching and internalisation leads, leaving the student to do the work entirely. The move from defining 'parent' to sharpening 'teach values' is correctly sequenced \u2014 the student has demonstrated readiness to go deeper, and the tutor advances accordingly."
+      },
+      "judge_pass": true
+    },
+    {
+      "turn": 6,
+      "student": "I mean... I think teaching is enough? Like the parent did their part, so it's not their fault if the child doesn't listen. That's just what teaching means I guess.",
+      "socra": "\n\n\n\nGood \u2014 that's a clean boundary to draw. Teaching is the act, internalisation is the outcome. The parent owns the former, not the latter. That distinction will be useful later.\n\nNow let's pin down **\"values\"** itself. You said earlier it means \"things you believe in and think are right\" \u2014 but that's quite broad. Are we talking about moral values like honesty and empathy? Religious values? National values like meritocracy? \n\nWhy does it matter? Because **who decides** which values get taught changes the whole argument. So \u2014 what kind of values do you think this question is really about?",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 4,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Identifies ranking claim embedded in 'most important'",
+          "Draws useful distinction between teaching and internalising values"
+        ],
+        "challenge_patterns": [
+          "Definitions remain impressionistic \u2014 needs more precision"
+        ],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 5,
+        "focus": 4,
+        "targeted_affirmation": 4,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 5,
+        "reasoning": "The question 'who decides which values get taught' is genuinely probing and forces the student to think about agency and authority without being led. The response is tight but the teach/internalisation recap, while useful, slightly restates what was just established rather than moving immediately forward. The affirmation 'Good \u2014 that's a clean boundary to draw' is specific enough, naming the conceptual move the student made rather than generic praise. The tutor lists examples of value types without suggesting which is correct, leaving the student to do the categorisation work. The tutor correctly moves from 'teach' to 'values' definition having resolved the prior term, which is the right sequencing at this stage of unpacking key terms."
+      },
+      "judge_pass": true
+    },
+    {
+      "turn": 7,
+      "student": "Um... I think like, moral values? Like teaching kids right from wrong. That's probably what they mean by values.",
+      "socra": "\n\n\n\nSolid \u2014 moral values, teaching right from wrong. That's a workable definition and we'll hold it.\n\nNow the most loaded term in the whole question: **\"most important responsibility.\"** This is where the question's real argument lives. \n\nTwo things buried in there \u2014 *most important* implies a ranking above other responsibilities, and *responsibility* implies obligation, not just choice. So here's the question: **what other responsibilities does a parent have** \u2014 and why might teaching values rank above or below them?",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 4,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Willing to interrogate question terms before arguing",
+          "Drew a clean distinction between teaching and internalisation"
+        ],
+        "challenge_patterns": [
+          "Definitions tend toward the intuitive rather than precise"
+        ],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 5,
+        "focus": 4,
+        "targeted_affirmation": 4,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 5,
+        "reasoning": "socratic_quality: The question 'what other responsibilities does a parent have \u2014 and why might teaching values rank above or below them?' is genuinely probing, forcing the student to construct a hierarchy rather than receiving one. focus: The unpacking of 'most important responsibility' into its two components (ranking + obligation) earns its place, but 'we'll hold it' on the values definition is mild filler that could be cut. targeted_affirmation: 'Solid' is slightly generic but the tutor correctly identifies the definition as 'workable' rather than perfect, which is calibrated and honest rather than falsely effusive. no_direct_answer: The tutor names the structural components of the term but does not supply which responsibilities exist or how the ranking should go \u2014 the student still has to do all the substantive work. phase_appropriateness: The conversation has completed definitional groundwork on 'values' and 'parent,' so pivoting to the ranking claim embedded in 'most important responsibility' is exactly the right next move before argumentation begins."
+      },
+      "judge_pass": true
+    },
+    {
+      "turn": 8,
+      "student": "Um... I think like, parents also have to provide for the child? Like food and shelter and stuff. Those seem pretty important too.",
+      "socra": "\n\n\n\nExactly right \u2014 and now you've identified the real tension in the question. Material needs versus moral formation.\n\nHere's the ranking question: **can values even be taught if basic needs aren't met first?** A starving child isn't in a position to learn honesty or empathy. That suggests material provision might be a *prerequisite* for teaching values \u2014 which would make it more foundational, not less important.\n\nBut someone else might argue the opposite: that values are what make a person who they are, and material comfort without moral grounding produces a child who is well-fed but directionless.\n\nSo \u2014 **which side do you lean toward?** Don't worry about being right. Just tell me your instinct.",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 4,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Draws clean boundaries between related concepts (teaching vs internalisation)"
+        ],
+        "challenge_patterns": [
+          "Definitions tend toward the intuitive \u2014 needs to push toward argumentative precision"
+        ],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 3,
+        "focus": 2,
+        "targeted_affirmation": 2,
+        "no_direct_answer": 2,
+        "phase_appropriateness": 3,
+        "reasoning": "socratic_quality: The final question ('which side do you lean toward?') is genuinely open, but the tutor pre-constructs both sides of the argument so completely that the student's thinking is guided rather than elicited \u2014 the probing is weakened by the scaffolding. focus: The response restates the student's point, then builds out both arguments in full, then asks for the student's view \u2014 too much of the work is done by the tutor before the question lands, making multiple sentences redundant. targeted_affirmation: 'Exactly right' is generic and the student only named one example (food/shelter), so the affirmation isn't tied to a specific intellectual move. no_direct_answer: The tutor explicitly constructs both the 'prerequisite' argument and the 'moral grounding' counter-argument, handing the student the two main positions they would need to reason to themselves \u2014 this significantly reduces the student's need to think. phase_appropriateness: The conversation is still in the definitional/setup phase and the student has only made a basic observation; jumping to a full ranking debate with pre-built arguments on both sides advances the discussion prematurely before the student has done the analytical work themselves."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 9,
+      "student": "I guess... I lean toward like, material needs being more important? Because if you don't have food and shelter you can't really do anything else. Values seem more like a bonus on top of that.",
+      "socra": "\n\n\n\nThat's a defensible position \u2014 and it has real argumentative force. The idea that material provision is a *prerequisite* rather than a competing responsibility is actually more sophisticated than just saying \"food matters more.\"\n\nBefore we move on \u2014 can you state your position in **one sentence** that directly answers the question? Something like: \"While teaching values is important, it is not the most important responsibility because...\"\n\nDon't overthink it. A rough version is fine \u2014 we'll sharpen it later.",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 4,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Identifies foundational distinctions between prerequisites and goals"
+        ],
+        "challenge_patterns": [
+          "Needs to push beyond instinct to articulate a structured position"
+        ],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 5,
+        "focus": 4,
+        "targeted_affirmation": 3,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 5,
+        "reasoning": "socratic_quality: The tutor asks the student to articulate their own thesis in one sentence, which forces genuine intellectual commitment without leading them anywhere. focus: The response is tight but 'Don't overthink it. A rough version is fine \u2014 we'll sharpen it later' is mild filler that softens rather than challenges, costing one point. targeted_affirmation: 'That's a defensible position' and 'it has real argumentative force' are somewhat generic; the tutor names the specific move (prerequisite framing) but then praises the general position rather than the exact analytical distinction the student made. no_direct_answer: The tutor neither reveals nor implies the correct answer \u2014 the student still has to construct their own thesis sentence with no model provided. phase_appropriateness: The student has staked a position, so asking them to crystallise it into a thesis sentence is exactly the right next move before building arguments."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 10,
+      "student": "Um... like, teaching values is important but it's not the most important because parents need to make sure their kids have food and shelter first before anything else?",
+      "socra": "\n\n\n\nGood \u2014 that's a workable provisional thesis",
+      "metadata": {
+        "current_phase": 1,
+        "question_score": 4,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Identifies competing responsibilities clearly",
+          "Willing to take a position"
+        ],
+        "challenge_patterns": [
+          "Definitions remain surface-level so far"
+        ],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 1,
+        "focus": 1,
+        "targeted_affirmation": 1,
+        "no_direct_answer": 1,
+        "phase_appropriateness": 1,
+        "reasoning": "socratic_quality: The response is cut off mid-sentence and contains no question whatsoever, so no probing occurred. focus: The response is incomplete and contains only a fragment with no purposeful content. targeted_affirmation: 'Good' is generic praise with no specific identification of what the student did well, and the response is truncated. no_direct_answer: While no answer was directly given, this is only because the response was never completed \u2014 there is no meaningful content to evaluate. phase_appropriateness: The student has just stated a provisional thesis and the tutor should be pushing them to stress-test it or identify supporting arguments, but the truncated response does nothing to advance the conversation."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 11,
+      "student": "Yeah... I think that's what I said? Like values can't come first if the kid doesn't even have basic needs met.",
+      "socra": "\n\n\n\nExactly \u2014 and that's a sharper way of putting it. Material provision isn't *competing* with values, it's *prior* to them. Hold onto that logic.\n\nProvisional thesis locked. Let's build your first paragraph.\n\nYour argument is that material needs come before values. Write me a **topic sentence** for this paragraph \u2014 one sentence that directly answers the question. Someone reading only that sentence should know your position on whether teaching values is the most important responsibility.",
+      "metadata": {
+        "current_phase": 2,
+        "question_score": 5,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Identifies prerequisite logic \u2014 understands that conditions must be met before others can function"
+        ],
+        "challenge_patterns": [],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 4,
+        "focus": 3,
+        "targeted_affirmation": 3,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 3,
+        "reasoning": "socratic_quality: The question asks for a topic sentence, which is a genuine task that forces the student to articulate their position precisely, though it's more of a writing prompt than a probing challenge to their thinking. focus: The response has some filler \u2014 'Hold onto that logic' and 'Provisional thesis locked' are transitional padding that add no argumentative value before getting to the actual task. targeted_affirmation: 'That's a sharper way of putting it' names that the student refined their phrasing but doesn't identify what specifically was sharper \u2014 it's borderline generic. no_direct_answer: The tutor gives no answer and asks the student to produce the topic sentence themselves, fully preserving the student's cognitive work. phase_appropriateness: Moving to paragraph construction is premature \u2014 the student has only one argument (material needs) and hasn't yet been pushed to identify counter-arguments or anticipate the essay's structure, which 'Discuss' demands; the thesis itself hasn't been stress-tested against the other side."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 12,
+      "student": "Um... like, parents have other responsibilities that are more important, like providing food and shelter for their kids?",
+      "socra": "\n\n\n\nClose \u2014 but that sentence introduces your point without directly answering the question. It doesn't tell me whether teaching values *is or isn't* the most important responsibility.\n\nTry rewriting it so the words **\"most important responsibility\"** appear in the sentence, and your answer to that claim is unmistakable. One sentence.",
+      "metadata": {
+        "current_phase": 2,
+        "question_score": 7,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Identifies hierarchy of needs as argumentative logic"
+        ],
+        "challenge_patterns": [
+          "Topic sentences introduce theme but don't directly answer the question's claim"
+        ],
+        "moves_practiced": [
+          1
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 5,
+        "focus": 4,
+        "targeted_affirmation": 3,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 5,
+        "reasoning": "socratic_quality: The tutor asks the student to rewrite the sentence with specific words, which is a genuine craft challenge that forces the student to think about argumentative precision without giving any model answer. focus: The response is tight but the opening 'Close \u2014 but' plus the explanation of what's missing could have been compressed; however every sentence does earn its place in diagnosing the problem and setting the task. targeted_affirmation: The tutor withholds praise appropriately given the weak topic sentence, but the word 'Close' is mildly generic and slightly misleading since the sentence wasn't really close to answering the question directly. no_direct_answer: The tutor identifies the gap (the phrase 'most important responsibility' is absent and the answer is not unmistakable) without supplying the corrected sentence or implying what it should say, leaving all the generative work to the student. phase_appropriateness: The student is in the paragraph-building phase and has just produced a weak topic sentence; asking them to revise it with a specific structural constraint is exactly the right level of challenge at this stage."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 13,
+      "student": "Um... like, teaching values is not the most important responsibility of a parent because providing basic needs like food and shelter matters more?",
+      "socra": "\n\n\n\nThat works \u2014 you've used the question's exact terms and your position is unmistakable. That's Move 2 done right.\n\nNow develop it. What's your example? Give me a specific, real-world case that shows a parent prioritising basic needs over values \u2014 and why that's the right call.",
+      "metadata": {
+        "current_phase": 2,
+        "question_score": 9,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Uses question's exact terms in topic sentences",
+          "Builds logical priority argument well"
+        ],
+        "challenge_patterns": [],
+        "moves_practiced": [
+          1,
+          2
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 4,
+        "focus": 4,
+        "targeted_affirmation": 3,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 4,
+        "reasoning": "socratic_quality: The question 'give me a specific, real-world case' is a genuine probe that forces the student to instantiate their argument, though 'and why that's the right call' slightly steers the evaluative frame. focus: The response is tight with no filler, though 'That's Move 2 done right' is mild padding that doesn't earn its place. targeted_affirmation: 'You've used the question's exact terms and your position is unmistakable' names what the student did correctly but labels it 'Move 2 done right' which is a framework term that doesn't reflect back the student's specific intellectual move. no_direct_answer: The tutor does not reveal what a good example looks like or imply what the answer should be \u2014 the student must generate the case independently. phase_appropriateness: Moving to evidence-building after a clean topic sentence is correctly calibrated, though asking for both the example and the evaluative judgment in one step may be slightly premature before checking if the student can produce any example at all."
+      },
+      "judge_pass": false
+    },
+    {
+      "turn": 14,
+      "student": "Um... like, maybe a parent who works two jobs and doesn't have time to sit down and teach values? Like they're just trying to make sure the family survives.",
+      "socra": "\n\n\n\nGood instinct \u2014 the logic is right. But \"a parent who works two jobs\" is a type, not a case. GP examiners reward specificity.\n\nCan you ground this in a **real context**? Think about a country, a social group, or a documented situation where parents genuinely cannot afford to prioritise values teaching because survival comes first. What comes to mind?",
+      "metadata": {
+        "current_phase": 2,
+        "question_score": 9,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Uses question's exact terms in topic sentences",
+          "Grasps hierarchical logic \u2014 material needs as prior condition, not just competitor"
+        ],
+        "challenge_patterns": [
+          "Examples tend toward the generic \u2014 needs a specific, grounded case"
+        ],
+        "moves_practiced": [
+          1,
+          2
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 5,
+        "focus": 4,
+        "targeted_affirmation": 4,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 5,
+        "reasoning": "socratic_quality: The question pushes the student from abstract type to specific grounded case without implying what that case should be. focus: 'The logic is right' and the distinction between 'a type, not a case' both earn their place, though 'Good instinct' is a minor filler opener. targeted_affirmation: 'The logic is right' names exactly what the student got correct \u2014 the causal reasoning \u2014 without being generic, though it could be even more precise about what the logic is. no_direct_answer: The tutor gives no example, no country, no social group \u2014 the student must supply all content. phase_appropriateness: The student has a topic sentence and a rough example; pushing toward specificity and real-world grounding is exactly the right next move at this stage of paragraph development."
+      },
+      "judge_pass": true
+    },
+    {
+      "turn": 15,
+      "student": "Um... like, maybe families in really poor countries? Like if you're living in poverty you just focus on surviving, not teaching values.",
+      "socra": "\n\n\n\nStill a type, not a case. \"Poor countries\" is too broad to be analytically useful.\n\nName one \u2014 a specific country, region, or documented situation. Think about what you've studied in school or seen in the news. Where do we **know** families are in survival mode?",
+      "metadata": {
+        "current_phase": 2,
+        "question_score": 8,
+        "insight_unlocked": null,
+        "student_strengths": [
+          "Willing to engage with question terms directly",
+          "Grasps the basic logic of prioritising needs over values"
+        ],
+        "challenge_patterns": [
+          "Examples remain generic - needs to anchor in specific, named contexts"
+        ],
+        "moves_practiced": [
+          1,
+          2
+        ]
+      },
+      "judge_scores": {
+        "socratic_quality": 5,
+        "focus": 5,
+        "targeted_affirmation": 3,
+        "no_direct_answer": 5,
+        "phase_appropriateness": 5,
+        "reasoning": "The question 'Where do we know families are in survival mode?' is genuinely probing and forces the student to retrieve and apply specific knowledge rather than receive it. Every sentence earns its place \u2014 the critique is immediate, the redirect is precise, and there is no padding. The affirmation is absent, which is correct since 'poor countries' is a weak answer, but the prior sentence 'Still a type, not a case' implicitly acknowledges the student's logic was right even if the example was wrong \u2014 this is borderline specific so scores a 3. The tutor does not hint at any country or region, leaving the retrieval entirely to the student. The push for a named case is exactly the right move at this stage of argument-building \u2014 the student has the logic but needs to prove they can ground it, which is the correct next challenge."
+      },
+      "judge_pass": false
+    }
+  ],
+  "summary": {
+    "score_trajectory": [
+      1,
+      2,
+      3,
+      2,
+      3,
+      4,
+      4,
+      4,
+      4,
+      4,
+      5,
+      7,
+      9,
+      9,
+      8
+    ],
+    "score_delta": 7,
+    "phase_reached": 2,
+    "phase_turn_breakdown": {
+      "1": 10,
+      "2": 5
+    },
+    "avg_tutor_scores": {
+      "socratic_quality": 4.27,
+      "focus": 3.47,
+      "targeted_affirmation": 3.2,
+      "no_direct_answer": 4.13,
+      "phase_appropriateness": 4.27
+    },
+    "insights_unlocked": [],
+    "moves_practiced": [
+      1,
+      2
+    ]
+  }
+}

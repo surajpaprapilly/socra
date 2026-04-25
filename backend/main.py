@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+import logging
 import anthropic
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -24,6 +25,11 @@ from database import db_select, db_insert, db_update
 from memory import update_user_memory
 
 app = FastAPI(title="Socra API")
+
+# Configure professional logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 # ---------------------------------------------------------------------------
 # Developer role helper
@@ -130,7 +136,12 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
     # Fetch from DB
     s_data = await db_select(current_user["supabase"], "chat_sessions", {"id": session_id})
     bp_data = await db_select(current_user["supabase"], "active_blueprints", {"session_id": session_id})
-    
+
+    # Log the fetched data professionally using the logger
+    logger.debug("Running extraction for session_id: %s", session_id)
+    logger.debug("s_data: %s", s_data)
+    logger.debug("bp_data: %s", bp_data)
+
     if not s_data or not bp_data:
         return
         
@@ -139,11 +150,11 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
     current_blueprint = bp_data[0]["data"]
     
     # Extract patch
-    print("Running blueprint extraction...")
+    logger.info("Running blueprint extraction...")
     patch_data = await ai_handler.extract_blueprint_patch(messages, current_blueprint)
-    print(f"Extracted patch data: {patch_data}")
+    logger.info("Extracted patch data: %s", patch_data)
     if not patch_data:
-        print("No patch data extracted.")
+        logger.warning("No patch data extracted.")
         return
         
     old_thesis = current_blueprint.get("thesis")
@@ -153,7 +164,7 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
         updated_model = await patch_blueprint(session_id, patch_data, current_user)
         updated_bp = updated_model.model_dump()
     except Exception as e:
-        print(f"Failed to apply expected patch data: {patch_data}\nError: {e}")
+        logger.error("Failed to apply expected patch data: %s\nError: %s", patch_data, e)
         return
     
     sq = updated_bp["session_quality"]
@@ -183,17 +194,17 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
         needs_update = True
         
     if needs_update:
-        print(f"Updating session_quality constraints... {sq}")
+        logger.info("Updating session_quality constraints... %s", sq)
         await patch_blueprint(session_id, {"session_quality": sq}, current_user)
         
     # Check if session is complete (turn > 5)
     # We update user memory if phase > 5
     if session.get("turn", 1) > 5:
-        print("Session complete! Updating cross-session user memory...")
+        logger.info("Session complete! Updating cross-session user memory...")
         try:
             await update_user_memory(current_user["supabase"], current_user["id"], session_id, updated_bp)
         except Exception as e:
-            print(f"Error updating user memory: {e}")
+            logger.error("Error updating user memory: %s", e)
 
 @app.post("/api/session/chat")
 async def chat_session(request: ChatMessageRequest, current_user: dict = Depends(get_current_user)):
@@ -213,6 +224,7 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
     
     async def chat_wrapper():
         full_response = ""
+        captured_metadata = None
         current_turn = session["turn"]
         new_insights_unlocked = []
         new_strengths = []
@@ -236,6 +248,7 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
                     data_str = chunk.split("data: ", 1)[1].strip()
                     if data_str and data_str != "{}" and data_str != '{"error": "failed to parse"}':
                         meta = json.loads(data_str)
+                        captured_metadata = meta
                         if "current_phase" in meta and meta["current_phase"] > current_turn and meta["current_phase"] <= 6:
                             current_turn = meta["current_phase"]
                         if "insight_unlocked" in meta and meta["insight_unlocked"]:
@@ -258,7 +271,10 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
             
         # After streaming is fully complete, save the gathered AI response to DB
         if full_response:
-            messages.append({"role": "assistant", "content": full_response})
+            msg_to_append = {"role": "assistant", "content": full_response}
+            if captured_metadata is not None:
+                msg_to_append["metadata"] = captured_metadata
+            messages.append(msg_to_append)
             await db_update(
                 current_user["supabase"],
                 "chat_sessions",

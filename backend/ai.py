@@ -244,14 +244,20 @@ Example: "You locked down precise definitions and built a conditional argument i
         pruned_msgs = []
         
         if len(messages) > MAX_MESSAGES:
-            pruned_msgs.extend(messages[:2]) # Keep the first turn
-            pruned_msgs.append({"role": "user", "content": "[...Intermediate conversation history pruned for length. Please refer to the current blueprint state...]"})
-            pruned_msgs.append({"role": "assistant", "content": "[Noted. I will rely on the Blueprint for any missing intermediate context.]"})
-            
-            tail = messages[-7:]
-            if tail[0]["role"] != "user":
-                tail = messages[-6:]
-            pruned_msgs.extend(tail)
+            middle_messages = messages[2:-6]
+            if middle_messages:
+                summary = await self.summarize_history(middle_messages)
+                
+                pruned_msgs.extend(messages[:2]) # Keep the first turn
+                pruned_msgs.append({"role": "user", "content": f"[Intermediate conversation history summarized by system]:\n{summary}"})
+                pruned_msgs.append({"role": "assistant", "content": "[Understood. I will rely on this summary and the Blueprint for context.]"})
+                
+                tail = messages[-7:]
+                while tail and tail[0]["role"] != "user":
+                    tail = tail[1:]
+                pruned_msgs.extend(tail)
+            else:
+                pruned_msgs = messages
         else:
             pruned_msgs = messages
 
@@ -392,7 +398,8 @@ Example: "You locked down precise definitions and built a conditional argument i
     async def generate_nudge(self, question: str, messages: List[Dict[str, str]]) -> str:
         # Provide a targeted nudge based on the current context without giving the answer
         anthropic_msgs = []
-        for msg in messages:
+        recent_messages = messages[-6:] if len(messages) > 6 else messages
+        for msg in recent_messages:
             anthropic_msgs.append({"role": msg["role"], "content": msg["content"]})
             
         # The Anthropic API requires the final message to be from the 'user'
@@ -420,6 +427,23 @@ Be encouraging. Provide ONLY the nudge text."""
         )
         
         return response.content[0].text
+
+    async def summarize_history(self, messages: List[Dict[str, str]]) -> str:
+        history_str = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in messages])
+        
+        system_prompt = """You are an expert summarizer for a Socratic tutoring session.
+Your task is to summarize the provided conversation history concisely.
+Focus only on the key ideas discussed, the student's stance, and any points of friction or conceptual breakthroughs.
+Do NOT include pleasantries or the tutor's scaffolding instructions. Keep it under 3-4 sentences."""
+
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=300,
+            system=system_prompt,
+            messages=[{"role": "user", "content": f"Please summarize this conversation history:\n\n{history_str}"}]
+        )
+        
+        return response.content[0].text.strip()
 
     async def extract_blueprint_patch(self, messages: List[Dict[str, str]], current_blueprint: dict) -> dict:
         system_prompt = """You are a strictly constrained blueprint extractor. You are given a General Paper (GP) Socratic tutoring conversation. Your job is to extract ONLY information that the student has EXPLICITLY and CONCRETELY established. 
