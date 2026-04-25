@@ -17,9 +17,11 @@ from models import StartSessionRequest, StartSessionResponse, ChatMessageRequest
 from learn_routes import router as learn_router
 from bank_routes import router as bank_router
 from blueprint_routes import router as blueprint_router, patch_blueprint
+from plato_routes import router as plato_router
 from dependencies import get_current_user
 from fastapi import Depends
 from database import db_select, db_insert, db_update
+from memory import update_user_memory
 
 app = FastAPI(title="Socra API")
 
@@ -47,6 +49,7 @@ app.add_middleware(
 app.include_router(learn_router, prefix="/api/learn")
 app.include_router(bank_router, prefix="/api/bank")
 app.include_router(blueprint_router, prefix="/api/blueprint")
+app.include_router(plato_router, prefix="/api/plato")
 
 # Initialize AI handler
 # Will fail if ANTHROPIC_API_KEY is not set
@@ -182,6 +185,15 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
     if needs_update:
         print(f"Updating session_quality constraints... {sq}")
         await patch_blueprint(session_id, {"session_quality": sq}, current_user)
+        
+    # Check if session is complete (turn > 5)
+    # We update user memory if phase > 5
+    if session.get("turn", 1) > 5:
+        print("Session complete! Updating cross-session user memory...")
+        try:
+            await update_user_memory(current_user["supabase"], current_user["id"], session_id, updated_bp)
+        except Exception as e:
+            print(f"Error updating user memory: {e}")
 
 @app.post("/api/session/chat")
 async def chat_session(request: ChatMessageRequest, current_user: dict = Depends(get_current_user)):
@@ -432,6 +444,58 @@ async def delete_session(session_id: str, current_user: dict = Depends(get_curre
 # Developer-only utility endpoints
 # Blocked at 403 for any non-developer account — safe to ship to production
 # ---------------------------------------------------------------------------
+@app.get("/api/dev/evals")
+async def list_evals(current_user: dict = Depends(get_current_user)):
+    """Lists all dynamic eval transcript files. Developer only."""
+    if not is_developer(current_user):
+        raise HTTPException(status_code=403, detail="Developer access only.")
+
+    log_dir = os.path.join(os.path.dirname(__file__), "data", "eval_logs")
+    if not os.path.isdir(log_dir):
+        return {"evals": []}
+
+    evals = []
+    for fname in sorted(os.listdir(log_dir), reverse=True):
+        if not fname.endswith(".json"):
+            continue
+        path = os.path.join(log_dir, fname)
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            evals.append({
+                "run_id": data.get("run_id", fname[:-5]),
+                "student_type": data.get("student_type", "unknown"),
+                "question": data.get("question", ""),
+                "turns": data.get("turns", 0),
+                "timestamp_iso": data.get("timestamp_iso", ""),
+                "summary": data.get("summary", {}),
+            })
+        except Exception:
+            pass
+
+    return {"evals": evals}
+
+
+@app.get("/api/dev/evals/{run_id}")
+async def get_eval(run_id: str, current_user: dict = Depends(get_current_user)):
+    """Serves a single eval transcript JSON. Developer only."""
+    if not is_developer(current_user):
+        raise HTTPException(status_code=403, detail="Developer access only.")
+
+    import re as _re
+    if not _re.match(r'^[a-zA-Z0-9_\-]+$', run_id):
+        raise HTTPException(status_code=400, detail="Invalid run_id format.")
+
+    log_dir = os.path.join(os.path.dirname(__file__), "data", "eval_logs")
+    path = os.path.join(log_dir, f"{run_id}.json")
+
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Eval transcript not found.")
+
+    with open(path) as f:
+        return json.load(f)
+
+
 @app.delete("/api/dev/reset-sessions")
 async def dev_reset_sessions(current_user: dict = Depends(get_current_user)):
     """Wipes all chat sessions and blueprints for the dev account.
