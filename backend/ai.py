@@ -238,8 +238,25 @@ Example: "You locked down precise definitions and built a conditional argument i
     async def stream_chat_response(self, question: str, messages: List[Dict[str, str]]) -> AsyncGenerator[str, None]:
         # Formulate Anthropic messages
         # Anthropic expects alternate user/assistant. The messages list should already be structured this way.
+        
+        # Token budgeting: prune the middle of long conversations
+        MAX_MESSAGES = 12
+        pruned_msgs = []
+        
+        if len(messages) > MAX_MESSAGES:
+            pruned_msgs.extend(messages[:2]) # Keep the first turn
+            pruned_msgs.append({"role": "user", "content": "[...Intermediate conversation history pruned for length. Please refer to the current blueprint state...]"})
+            pruned_msgs.append({"role": "assistant", "content": "[Noted. I will rely on the Blueprint for any missing intermediate context.]"})
+            
+            tail = messages[-7:]
+            if tail[0]["role"] != "user":
+                tail = messages[-6:]
+            pruned_msgs.extend(tail)
+        else:
+            pruned_msgs = messages
+
         anthropic_msgs = []
-        for msg in messages:
+        for msg in pruned_msgs:
             anthropic_msgs.append({"role": msg["role"], "content": msg["content"]})
 
         stream = await self.client.messages.create(
@@ -415,7 +432,8 @@ IMPORTANT SCHEMA RULES:
 - `paragraphs`: MUST be a list of objects with: title, topic_sentence, point, explanation, example, link. Only extract a paragraph if a clear topic sentence or argument focus has been established."""
         
         # Serialize history
-        history_str = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in messages])
+        recent_messages = messages[-6:] if len(messages) > 6 else messages
+        history_str = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in recent_messages])
         blueprint_str = json.dumps(current_blueprint, indent=2)
         
         user_msg = f"""CONVERSATION HISTORY:
