@@ -15,6 +15,8 @@ import NavBar from './components/NavBar';
 import LearnMode from './components/learn/LearnMode';
 import SavedBlueprints from './components/bank/SavedBlueprints';
 import ProfileScreen from './components/profile/ProfileScreen';
+import EvalList from './components/EvalList';
+import EvalViewer from './components/EvalViewer';
 import PremiumModal from './components/PremiumModal';
 import { supabase, fetchWithAuth } from './lib/supabase';
 
@@ -288,6 +290,9 @@ function AppRoutes() {
 
         <Route path="/bank" element={<ProtectedRoute><SavedBlueprints /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
+
+        <Route path="/eval-viewer" element={<ProtectedRoute><EvalList /></ProtectedRoute>} />
+        <Route path="/eval-viewer/:runId" element={<ProtectedRoute><EvalViewer /></ProtectedRoute>} />
       </Routes>
     </div>
   );

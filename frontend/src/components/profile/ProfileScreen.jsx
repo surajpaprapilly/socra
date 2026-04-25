@@ -7,23 +7,37 @@ import { getConflictInfoFromQuestion } from './ProfileThemeMatcher';
 
 export default function ProfileScreen() {
     const [sessions, setSessions] = useState([]);
+    const [userMemory, setUserMemory] = useState(null);
+    const [platoObservation, setPlatoObservation] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function fetchHistory() {
+        async function fetchData() {
             try {
-                const res = await fetchWithAuth('http://localhost:8000/api/sessions');
-                if (res.ok) {
-                    const data = await res.json();
+                const [sessRes, memRes, obsRes] = await Promise.all([
+                    fetchWithAuth('http://localhost:8000/api/sessions'),
+                    fetchWithAuth('http://localhost:8000/api/memory'),
+                    fetchWithAuth('http://localhost:8000/api/plato/observation')
+                ]);
+                if (sessRes.ok) {
+                    const data = await sessRes.json();
                     setSessions(data.sessions || []);
                 }
+                if (memRes.ok) {
+                    const data = await memRes.json();
+                    setUserMemory(data);
+                }
+                if (obsRes.ok) {
+                    const data = await obsRes.json();
+                    setPlatoObservation(data.message);
+                }
             } catch (err) {
-                console.error("Error fetching sessions for profile:", err);
+                console.error("Error fetching data for profile:", err);
             } finally {
                 setLoading(false);
             }
         }
-        fetchHistory();
+        fetchData();
     }, []);
 
     const { streaks, stats } = useMemo(() => {
@@ -112,6 +126,12 @@ export default function ProfileScreen() {
                     <div>
                         <h1 className="font-display text-4xl text-textDefault tracking-wide mb-2">My Profile</h1>
                         <p className="font-serif text-textMuted/70 italic text-lg shadow-sm">Your thinking, made visible.</p>
+                        {platoObservation && (
+                            <div className="mt-4 p-4 border border-sage/30 bg-sage/5 inline-block rounded relative">
+                                <div className="absolute -top-3 left-4 bg-background px-2 font-mono text-[10px] text-sage uppercase tracking-widest">Plato Says</div>
+                                <p className="font-serif text-sm text-sage/90 italic">"{platoObservation}"</p>
+                            </div>
+                        )}
                     </div>
                     
                     <div className="flex items-center space-x-6 mt-8 md:mt-0 font-mono text-sm border border-borderDark/30 bg-background/50 p-4">
@@ -137,7 +157,7 @@ export default function ProfileScreen() {
                         
                         {/* The Thinking Profile Map */}
                         <section>
-                            <ThinkingProfile sessions={sessions} />
+                            <ThinkingProfile sessions={sessions} userMemory={userMemory} />
                         </section>
 
                         {/* Recent Blueprints Gallery */}

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSession } from '../context/SessionContext';
 import BlueprintPanel from './learn/BlueprintPanel';
 import NudgeButton from './NudgeButton';
+import FinalBlueprint from './FinalBlueprint';
 import MilestoneCard from './MilestoneCard';
 
 import ReactMarkdown from "react-markdown";
@@ -11,6 +12,22 @@ import { fetchWithAuth } from '../lib/supabase';
 
 const MessageBubble = ({ role, content }) => {
     const isAI = role === 'assistant';
+    const isPlato = role === 'plato';
+
+    if (isPlato) {
+        return (
+            <div className="flex w-full mb-10 pl-4 animate-fade-in group">
+                <div className="mr-4 mt-1 flex-shrink-0">
+                    <span className="text-sage text-xs">✦</span>
+                </div>
+                <div className="prose prose-invert max-w-none font-serif text-lg text-sage/90 italic">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}components={{ hr: () => null }}>
+                        {content}
+                    </ReactMarkdown>
+                </div>
+            </div>
+        );
+    }
 
     if (isAI) {
         return (
@@ -67,6 +84,8 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
         return reaction ? 2 : 1;
     });
     const [isFinished, setIsFinished] = useState(() => initialTurn > 5);
+    const [showFinalScreen, setShowFinalScreen] = useState(false);
+    const [platoReflection, setPlatoReflection] = useState(null);
 
     // Live Signaling states
     const [score, setScore] = useState(initialScore);
@@ -145,8 +164,20 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                                 setMilestoneQueue(q => [...q, 'question_autopsy_complete']);
                                             }
                                         }
-                                        if (meta.current_phase > 5) {
-                                            setIsFinished(true);
+                                        if (meta.current_phase > 5 && !isFinished) {
+                                            setIsFinished(true); // Trigger payoff screen
+                                            setTimeout(async () => {
+                                                try {
+                                                    const refRes = await fetchWithAuth(`http://localhost:8000/api/plato/reflect?session_id=${sessionId}`);
+                                                    if (refRes.ok) {
+                                                        const refData = await refRes.json();
+                                                        setPlatoReflection(refData.message);
+                                                    }
+                                                } catch (e) {
+                                                    console.error("Failed to fetch reflection", e);
+                                                }
+                                                setShowFinalScreen(true);
+                                            }, 1500);
                                         }
                                     }
                                     if (meta.question_score !== undefined) {
@@ -155,6 +186,18 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                     if (meta.insight_unlocked) {
                                         setToastMessage(meta.insight_unlocked);
                                         setTimeout(() => setToastMessage(null), 5000);
+                                        
+                                        // Attempt to fetch Plato insight note (if repeated)
+                                        fetchWithAuth(`http://localhost:8000/api/plato/insight-note?insight=${encodeURIComponent(meta.insight_unlocked)}&session_id=${sessionId}`)
+                                            .then(res => res.json())
+                                            .then(data => {
+                                                if (data.message) {
+                                                    // Show Plato's message as a small toast or inline message
+                                                    // For MVP, we can append it as a chat bubble
+                                                    setMessages(prev => [...prev, { role: 'plato', content: data.message }]);
+                                                }
+                                            })
+                                            .catch(console.error);
                                     }
                                 }
                             } catch (e) {
@@ -212,9 +255,28 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     };
 
     useEffect(() => {
+        const fetchInitialGreeting = async () => {
+            try {
+                const res = await fetchWithAuth(`http://localhost:8000/api/plato/greeting?session_id=${sessionId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.message) {
+                        setMessages([{ role: 'plato', content: data.message }]);
+                        // Then trigger Socra
+                        handleStream("");
+                    }
+                } else {
+                    handleStream("");
+                }
+            } catch (e) {
+                console.error("Greeting fetch error", e);
+                handleStream("");
+            }
+        };
+
         // Only trigger initial stream for brand-new sessions (no resumeHistory, no initialMessage)
         if (!resumeHistory && !initialMessage && messages.length === 0 && !isStreaming) {
-            handleStream("");
+            fetchInitialGreeting();
         }
     }, []);
 
@@ -323,6 +385,14 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                     onMilestoneReached={handleMilestoneReached}
                 />
             </div>
+
+            {showFinalScreen && (
+                <FinalBlueprint 
+                    insights={blueprint?.unlocked_insights || []} 
+                    blueprint={blueprint} 
+                    platoReflection={platoReflection} 
+                />
+            )}
         </div>
     );
 }

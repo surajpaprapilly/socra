@@ -1,6 +1,6 @@
 import pydantic_core
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 class ChatMessageBase(BaseModel):
     role: str
@@ -163,3 +163,13 @@ class BlueprintModel(BaseModel):
         ChecklistItem(label="Synthesize conclusion")
     ]
     session_quality: SessionQuality = SessionQuality()
+
+class UserMemory(BaseModel):
+    user_id: str
+    moves_mastery: Dict[str, Any] = {}
+    persistent_strengths: List[str] = []
+    recurring_challenges: List[str] = []
+    all_insights: List[str] = []
+    score_history: List[Dict[str, Any]] = []
+    session_summaries: List[Dict[str, Any]] = []
+    total_sessions: int = 0
