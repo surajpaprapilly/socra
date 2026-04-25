@@ -448,12 +448,7 @@ Do NOT include pleasantries or the tutor's scaffolding instructions. Keep it und
     async def extract_blueprint_patch(self, messages: List[Dict[str, str]], current_blueprint: dict) -> dict:
         system_prompt = """You are a strictly constrained blueprint extractor. You are given a General Paper (GP) Socratic tutoring conversation. Your job is to extract ONLY information that the student has EXPLICITLY and CONCRETELY established. 
         
-DO NOT invent, infer, or guess. If an input is vague, partial, or just a stray thought, IGNORE IT entirely. Return null for any field not definitively established. Return only raw JSON, no markdown.
-        
-IMPORTANT SCHEMA RULES:
-- `key_terms`: MUST be a list of objects exactly like: [{"term": "...", "definition": "..."}]. ONLY extract a key term if the student has explicitly articulated a clear definition for it in the context of the essay. DO NOT extract vague topics or passing words (e.g., if they say "values are important", do not extract "values"). 
-- `thesis`: ONLY extract a thesis if the student has formulated a clear, direct, and mature position statement that directly answers the main question.
-- `paragraphs`: MUST be a list of objects with: title, topic_sentence, point, explanation, example, link. Only extract a paragraph if a clear topic sentence or argument focus has been established."""
+DO NOT invent, infer, or guess. If an input is vague, partial, or just a stray thought, IGNORE IT entirely. Return only what is definitively established."""
         
         # Serialize history
         recent_messages = messages[-6:] if len(messages) > 6 else messages
@@ -467,26 +462,68 @@ CURRENT BLUEPRINT STATE:
 {blueprint_str}
 
 INSTRUCTION: 
-Return only the fields that have been newly established or meaningfully updated since the last blueprint state. Use null for everything else."""
+Return only the fields that have been newly established or meaningfully updated since the last blueprint state."""
 
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=1000,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_msg}]
-        )
-        
-        text = response.content[0].text.strip()
-        # Clean markdown formatting if present despite instructions
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-            
+        tools = [
+            {
+                "name": "update_blueprint",
+                "description": "Output the fields that have been newly established or meaningfully updated.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "key_terms": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "term": {"type": "string"},
+                                    "definition": {"type": "string"}
+                                }
+                            }
+                        },
+                        "thesis": {"type": "string"},
+                        "paragraphs": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {"type": "string"},
+                                    "topic_sentence": {"type": "string"},
+                                    "point": {"type": "string"},
+                                    "explanation": {"type": "string"},
+                                    "example": {"type": "string"},
+                                    "link": {"type": "string"}
+                                }
+                            }
+                        },
+                        "counter_argument": {
+                            "type": "object",
+                            "properties": {
+                                "their_claim": {"type": "string"},
+                                "its_merit": {"type": "string"},
+                                "student_response": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+
         try:
-            return json.loads(text.strip())
-        except json.JSONDecodeError:
-            print("Failed to decode extraction JSON:", text)
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=1000,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_msg}],
+                tools=tools,
+                tool_choice={"type": "tool", "name": "update_blueprint"}
+            )
+            
+            for block in response.content:
+                if block.type == "tool_use" and block.name == "update_blueprint":
+                    return block.input
+                    
+            return {}
+        except Exception as e:
+            print(f"Failed to extract blueprint patch via tools: {e}")
             return {}
