@@ -445,6 +445,51 @@ Do NOT include pleasantries or the tutor's scaffolding instructions. Keep it und
         
         return response.content[0].text.strip()
 
+    async def merge_semantic_list(self, existing: list, new_items: list, list_type: str = "observations") -> list:
+        if not new_items:
+            return existing
+        if not existing:
+            return list(new_items)
+
+        system_prompt = f"""You are a deduplication assistant for a student profile. You will receive two lists of {list_type}: an existing list and a list of new items from the current session.
+Your task: return a merged list that adds new items only if they are NOT semantically equivalent to any existing item. If a new item means the same thing as an existing one (even if worded differently), discard the new item and keep the existing phrasing. Do not add, invent, or rephrase any items."""
+
+        user_msg = f"EXISTING:\n{chr(10).join(f'- {x}' for x in existing)}\n\nNEW:\n{chr(10).join(f'- {x}' for x in new_items)}"
+
+        tools = [
+            {
+                "name": "merged_list",
+                "description": "The deduplicated merged list.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "merged": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    },
+                    "required": ["merged"]
+                }
+            }
+        ]
+
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=200,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_msg}],
+                tools=tools,
+                tool_choice={"type": "tool", "name": "merged_list"}
+            )
+            for block in response.content:
+                if block.type == "tool_use" and block.name == "merged_list":
+                    return block.input.get("merged", existing)
+            return existing
+        except Exception as e:
+            print(f"merge_semantic_list fallback (error: {e})")
+            return list(set(existing) | set(new_items))
+
     async def extract_blueprint_patch(self, messages: List[Dict[str, str]], current_blueprint: dict) -> dict:
         system_prompt = """You are a strictly constrained blueprint extractor. You are given a General Paper (GP) Socratic tutoring conversation. Your job is to extract ONLY information that the student has EXPLICITLY and CONCRETELY established. 
         

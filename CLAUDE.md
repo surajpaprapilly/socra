@@ -52,7 +52,7 @@ Socra is a Socratic tutoring app for Singapore A-Level General Paper (GP). A stu
 
 ### Backend (`backend/`)
 
-FastAPI app with four route modules registered in `main.py`:
+FastAPI app with five route modules registered in `main.py`:
 
 | Module | Prefix | Purpose |
 |---|---|---|
@@ -60,6 +60,7 @@ FastAPI app with four route modules registered in `main.py`:
 | `learn_routes.py` | `/api/learn` | Article search via Exa AI, cached in Supabase |
 | `bank_routes.py` | `/api/bank` | Saved/archived blueprints (knowledge bank) |
 | `blueprint_routes.py` | `/api/blueprint` | Live blueprint CRUD with deep-merge PATCH |
+| `plato_routes.py` | `/api/plato` | Plato AI — memory-aware greeting, insight notes, session reflection |
 
 **`ai.py` — `SocraAI` class**
 
@@ -67,9 +68,11 @@ Uses `AsyncAnthropic` with prompt caching (ephemeral `cache_control`) on the sys
 
 Key methods:
 - `stream_chat_response()` — streams SSE, strips `<thinking>` and `<metadata>` XML tags from visible output, then re-emits metadata as a separate structured SSE event
-- `extract_blueprint_patch()` — non-streaming call after each turn; returns a JSON diff of newly established blueprint fields
+- `extract_blueprint_patch()` — non-streaming call after each turn; returns a JSON diff of newly established blueprint fields using tool calling for structured JSON output
 - `generate_nudge()` — 2-sentence hint without revealing the answer
 - `get_initial_chat_response()` — non-streaming call for the session-start message
+- `merge_semantic_list()` — AI-powered deduplication for growing lists (insights, strengths, challenges) using tool calling; prevents synonym bloat across sessions
+- `summarize_history()` — condenses middle conversation turns when message count exceeds 12 to manage token budget
 
 **Streaming format (SSE):**
 - `event: message\ndata: "<chunk>"` — visible text (JSON-encoded string)

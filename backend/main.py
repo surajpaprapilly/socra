@@ -197,93 +197,160 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
         logger.info("Updating session_quality constraints... %s", sq)
         await patch_blueprint(session_id, {"session_quality": sq}, current_user)
         
-    # Check if session is complete (turn > 5)
-    # We update user memory if phase > 5
-    if session.get("turn", 1) > 5:
-        logger.info("Session complete! Updating cross-session user memory...")
+    sq_final = updated_bp.get("session_quality", {})
+    if sq_final.get("question_autopsy_complete"):
+        logger.info("Phase 1+ complete — updating cross-session user memory...")
         try:
-            await update_user_memory(current_user["supabase"], current_user["id"], session_id, updated_bp)
+            await update_user_memory(current_user["supabase"], current_user["id"], session_id, updated_bp, ai_handler)
         except Exception as e:
             logger.error("Error updating user memory: %s", e)
 
 @app.post("/api/session/chat")
 async def chat_session(request: ChatMessageRequest, current_user: dict = Depends(get_current_user)):
+    import asyncio
     s_data = await db_select(current_user["supabase"], "chat_sessions", {"id": request.session_id})
     if not s_data:
         raise HTTPException(status_code=404, detail="Session not found")
         
     session = s_data[0]
     
-    messages = session["messages"]
+    # Stale lock: treat locks older than 60 s as expired
+    LOCK_TIMEOUT_SECONDS = 60
+    if session.get("is_generating") is True:
+        started_at = session.get("generation_started_at")
+        if started_at:
+            from datetime import datetime, timezone, timedelta
+            try:
+                lock_age = datetime.now(timezone.utc) - datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+                if lock_age < timedelta(seconds=LOCK_TIMEOUT_SECONDS):
+                    raise HTTPException(status_code=409, detail="A message is already being generated for this session. Please wait.")
+            except HTTPException:
+                raise
+            except Exception:
+                raise HTTPException(status_code=409, detail="A message is already being generated for this session. Please wait.")
+        else:
+            raise HTTPException(status_code=409, detail="A message is already being generated for this session. Please wait.")
+
+    lock_id = str(uuid.uuid4())
+    lock_acquired = False
+    try:
+        from datetime import datetime, timezone
+        def _lock_run():
+            return (
+                current_user["supabase"].table("chat_sessions")
+                .update({
+                    "is_generating": True,
+                    "generation_lock_id": lock_id,
+                    "generation_started_at": datetime.now(timezone.utc).isoformat(),
+                })
+                .eq("id", request.session_id)
+                .eq("is_generating", False)
+                .execute()
+            )
+        res = await asyncio.to_thread(_lock_run)
+        if not res.data:
+            raise HTTPException(status_code=409, detail="A message is already being generated for this session. Please wait.")
+        lock_acquired = len(res.data or []) == 1
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        logger.warning(f"Could not use is_generating lock (column missing?): {e}")
+    
+    
+    # Re-read messages after acquiring the lock so we always build on the latest turn,
+    # not on the snapshot taken before a concurrent request may have written.
+    fresh_data = await db_select(current_user["supabase"], "chat_sessions", {"id": request.session_id})
+    messages = fresh_data[0]["messages"] if fresh_data else session["messages"]
+
     # If the message is empty, we are just continuing the generation (e.g. initial streaming response)
     if request.message.strip():
         messages.append({"role": "user", "content": request.message})
-    
+
     # Create the generator for streaming
     generator = ai_handler.stream_chat_response(session["question"], messages)
     
     async def chat_wrapper():
         full_response = ""
         captured_metadata = None
-        current_turn = session["turn"]
+        current_turn = session.get("turn", 1)
         new_insights_unlocked = []
         new_strengths = []
         new_challenges = []
         latest_score = None
-        async for chunk in generator:
-            yield chunk
-            
-            if chunk.startswith("event: message\ndata: "):
+        
+        try:
+            async for chunk in generator:
+                yield chunk
+                
+                if chunk.startswith("event: message\ndata: "):
+                    try:
+                        data_str = chunk.split("data: ", 1)[1].strip()
+                        if data_str.startswith('"') and data_str.endswith('"'):
+                            full_response += json.loads(data_str)
+                        else:
+                            full_response += data_str
+                    except Exception as e:
+                        print(f"History parse error: {e}")
+                
+                if chunk.startswith("event: metadata\ndata: "):
+                    try:
+                        data_str = chunk.split("data: ", 1)[1].strip()
+                        if data_str and data_str != "{}" and data_str != '{"error": "failed to parse"}':
+                            meta = json.loads(data_str)
+                            captured_metadata = meta
+                            if "current_phase" in meta and meta["current_phase"] > current_turn and meta["current_phase"] <= 6:
+                                current_turn = meta["current_phase"]
+                            if "insight_unlocked" in meta and meta["insight_unlocked"]:
+                                insight = meta["insight_unlocked"]
+                                if insight not in new_insights_unlocked:
+                                    new_insights_unlocked.append(insight)
+                            if "question_score" in meta:
+                                latest_score = meta["question_score"]
+                            if "student_strengths" in meta and isinstance(meta["student_strengths"], list):
+                                for s in meta["student_strengths"]:
+                                    if s and s not in new_strengths:
+                                        new_strengths.append(s)
+                            if "challenge_patterns" in meta and isinstance(meta["challenge_patterns"], list):
+                                for c in meta["challenge_patterns"]:
+                                    if c and c not in new_challenges:
+                                        new_challenges.append(c)
+                    except Exception as e:
+                        print(f"Metadata parse error: {e}")
+                        pass
+                
+            # After streaming is fully complete, save the gathered AI response to DB
+            if full_response:
+                msg_to_append = {"role": "assistant", "content": full_response}
+                if captured_metadata is not None:
+                    msg_to_append["metadata"] = captured_metadata
+                messages.append(msg_to_append)
+                await db_update(
+                    current_user["supabase"],
+                    "chat_sessions",
+                    {
+                        "messages": messages,
+                        "turn": current_turn
+                    },
+                    {"id": request.session_id}
+                )
+        finally:
+            if lock_acquired:
                 try:
-                    data_str = chunk.split("data: ", 1)[1].strip()
-                    if data_str.startswith('"') and data_str.endswith('"'):
-                        full_response += json.loads(data_str)
-                    else:
-                        full_response += data_str
+                    def _unlock_run():
+                        return (
+                            current_user["supabase"].table("chat_sessions")
+                            .update({
+                                "is_generating": False,
+                                "generation_lock_id": None,
+                                "generation_started_at": None,
+                            })
+                            .eq("id", request.session_id)
+                            .eq("generation_lock_id", lock_id)
+                            .execute()
+                        )
+                    await asyncio.to_thread(_unlock_run)
                 except Exception as e:
-                    print(f"History parse error: {e}")
-            
-            if chunk.startswith("event: metadata\ndata: "):
-                try:
-                    data_str = chunk.split("data: ", 1)[1].strip()
-                    if data_str and data_str != "{}" and data_str != '{"error": "failed to parse"}':
-                        meta = json.loads(data_str)
-                        captured_metadata = meta
-                        if "current_phase" in meta and meta["current_phase"] > current_turn and meta["current_phase"] <= 6:
-                            current_turn = meta["current_phase"]
-                        if "insight_unlocked" in meta and meta["insight_unlocked"]:
-                            insight = meta["insight_unlocked"]
-                            if insight not in new_insights_unlocked:
-                                new_insights_unlocked.append(insight)
-                        if "question_score" in meta:
-                            latest_score = meta["question_score"]
-                        if "student_strengths" in meta and isinstance(meta["student_strengths"], list):
-                            for s in meta["student_strengths"]:
-                                if s and s not in new_strengths:
-                                    new_strengths.append(s)
-                        if "challenge_patterns" in meta and isinstance(meta["challenge_patterns"], list):
-                            for c in meta["challenge_patterns"]:
-                                if c and c not in new_challenges:
-                                    new_challenges.append(c)
-                except Exception as e:
-                    print(f"Metadata parse error: {e}")
-                    pass
-            
-        # After streaming is fully complete, save the gathered AI response to DB
-        if full_response:
-            msg_to_append = {"role": "assistant", "content": full_response}
-            if captured_metadata is not None:
-                msg_to_append["metadata"] = captured_metadata
-            messages.append(msg_to_append)
-            await db_update(
-                current_user["supabase"],
-                "chat_sessions",
-                {
-                    "messages": messages,
-                    "turn": current_turn
-                },
-                {"id": request.session_id}
-            )
+                    logger.warning(f"Failed to release lock: {e}")
             
             if new_insights_unlocked or new_strengths or new_challenges or latest_score is not None:
                 try:
