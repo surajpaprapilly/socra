@@ -244,14 +244,20 @@ Example: "You locked down precise definitions and built a conditional argument i
         pruned_msgs = []
         
         if len(messages) > MAX_MESSAGES:
-            pruned_msgs.extend(messages[:2]) # Keep the first turn
-            pruned_msgs.append({"role": "user", "content": "[...Intermediate conversation history pruned for length. Please refer to the current blueprint state...]"})
-            pruned_msgs.append({"role": "assistant", "content": "[Noted. I will rely on the Blueprint for any missing intermediate context.]"})
-            
-            tail = messages[-7:]
-            if tail[0]["role"] != "user":
-                tail = messages[-6:]
-            pruned_msgs.extend(tail)
+            middle_messages = messages[2:-6]
+            if middle_messages:
+                summary = await self.summarize_history(middle_messages)
+                
+                pruned_msgs.extend(messages[:2]) # Keep the first turn
+                pruned_msgs.append({"role": "user", "content": f"[Intermediate conversation history summarized by system]:\n{summary}"})
+                pruned_msgs.append({"role": "assistant", "content": "[Understood. I will rely on this summary and the Blueprint for context.]"})
+                
+                tail = messages[-7:]
+                while tail and tail[0]["role"] != "user":
+                    tail = tail[1:]
+                pruned_msgs.extend(tail)
+            else:
+                pruned_msgs = messages
         else:
             pruned_msgs = messages
 
@@ -392,7 +398,8 @@ Example: "You locked down precise definitions and built a conditional argument i
     async def generate_nudge(self, question: str, messages: List[Dict[str, str]]) -> str:
         # Provide a targeted nudge based on the current context without giving the answer
         anthropic_msgs = []
-        for msg in messages:
+        recent_messages = messages[-6:] if len(messages) > 6 else messages
+        for msg in recent_messages:
             anthropic_msgs.append({"role": msg["role"], "content": msg["content"]})
             
         # The Anthropic API requires the final message to be from the 'user'
@@ -421,15 +428,72 @@ Be encouraging. Provide ONLY the nudge text."""
         
         return response.content[0].text
 
+    async def summarize_history(self, messages: List[Dict[str, str]]) -> str:
+        history_str = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in messages])
+        
+        system_prompt = """You are an expert summarizer for a Socratic tutoring session.
+Your task is to summarize the provided conversation history concisely.
+Focus only on the key ideas discussed, the student's stance, and any points of friction or conceptual breakthroughs.
+Do NOT include pleasantries or the tutor's scaffolding instructions. Keep it under 3-4 sentences."""
+
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=300,
+            system=system_prompt,
+            messages=[{"role": "user", "content": f"Please summarize this conversation history:\n\n{history_str}"}]
+        )
+        
+        return response.content[0].text.strip()
+
+    async def merge_semantic_list(self, existing: list, new_items: list, list_type: str = "observations") -> list:
+        if not new_items:
+            return existing
+        if not existing:
+            return list(new_items)
+
+        system_prompt = f"""You are a deduplication assistant for a student profile. You will receive two lists of {list_type}: an existing list and a list of new items from the current session.
+Your task: return a merged list that adds new items only if they are NOT semantically equivalent to any existing item. If a new item means the same thing as an existing one (even if worded differently), discard the new item and keep the existing phrasing. Do not add, invent, or rephrase any items."""
+
+        user_msg = f"EXISTING:\n{chr(10).join(f'- {x}' for x in existing)}\n\nNEW:\n{chr(10).join(f'- {x}' for x in new_items)}"
+
+        tools = [
+            {
+                "name": "merged_list",
+                "description": "The deduplicated merged list.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "merged": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        }
+                    },
+                    "required": ["merged"]
+                }
+            }
+        ]
+
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=200,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_msg}],
+                tools=tools,
+                tool_choice={"type": "tool", "name": "merged_list"}
+            )
+            for block in response.content:
+                if block.type == "tool_use" and block.name == "merged_list":
+                    return block.input.get("merged", existing)
+            return existing
+        except Exception as e:
+            print(f"merge_semantic_list fallback (error: {e})")
+            return list(set(existing) | set(new_items))
+
     async def extract_blueprint_patch(self, messages: List[Dict[str, str]], current_blueprint: dict) -> dict:
         system_prompt = """You are a strictly constrained blueprint extractor. You are given a General Paper (GP) Socratic tutoring conversation. Your job is to extract ONLY information that the student has EXPLICITLY and CONCRETELY established. 
         
-DO NOT invent, infer, or guess. If an input is vague, partial, or just a stray thought, IGNORE IT entirely. Return null for any field not definitively established. Return only raw JSON, no markdown.
-        
-IMPORTANT SCHEMA RULES:
-- `key_terms`: MUST be a list of objects exactly like: [{"term": "...", "definition": "..."}]. ONLY extract a key term if the student has explicitly articulated a clear definition for it in the context of the essay. DO NOT extract vague topics or passing words (e.g., if they say "values are important", do not extract "values"). 
-- `thesis`: ONLY extract a thesis if the student has formulated a clear, direct, and mature position statement that directly answers the main question.
-- `paragraphs`: MUST be a list of objects with: title, topic_sentence, point, explanation, example, link. Only extract a paragraph if a clear topic sentence or argument focus has been established."""
+DO NOT invent, infer, or guess. If an input is vague, partial, or just a stray thought, IGNORE IT entirely. Return only what is definitively established."""
         
         # Serialize history
         recent_messages = messages[-6:] if len(messages) > 6 else messages
@@ -443,26 +507,68 @@ CURRENT BLUEPRINT STATE:
 {blueprint_str}
 
 INSTRUCTION: 
-Return only the fields that have been newly established or meaningfully updated since the last blueprint state. Use null for everything else."""
+Return only the fields that have been newly established or meaningfully updated since the last blueprint state."""
 
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=1000,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_msg}]
-        )
-        
-        text = response.content[0].text.strip()
-        # Clean markdown formatting if present despite instructions
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-            
+        tools = [
+            {
+                "name": "update_blueprint",
+                "description": "Output the fields that have been newly established or meaningfully updated.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "key_terms": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "term": {"type": "string"},
+                                    "definition": {"type": "string"}
+                                }
+                            }
+                        },
+                        "thesis": {"type": "string"},
+                        "paragraphs": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {"type": "string"},
+                                    "topic_sentence": {"type": "string"},
+                                    "point": {"type": "string"},
+                                    "explanation": {"type": "string"},
+                                    "example": {"type": "string"},
+                                    "link": {"type": "string"}
+                                }
+                            }
+                        },
+                        "counter_argument": {
+                            "type": "object",
+                            "properties": {
+                                "their_claim": {"type": "string"},
+                                "its_merit": {"type": "string"},
+                                "student_response": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+
         try:
-            return json.loads(text.strip())
-        except json.JSONDecodeError:
-            print("Failed to decode extraction JSON:", text)
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=1000,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_msg}],
+                tools=tools,
+                tool_choice={"type": "tool", "name": "update_blueprint"}
+            )
+            
+            for block in response.content:
+                if block.type == "tool_use" and block.name == "update_blueprint":
+                    return block.input
+                    
+            return {}
+        except Exception as e:
+            print(f"Failed to extract blueprint patch via tools: {e}")
             return {}

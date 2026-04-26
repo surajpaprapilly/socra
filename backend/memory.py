@@ -66,11 +66,14 @@ def _update_strengths_challenges(current_list: list, new_items: list, summaries:
             
     return list(persistent)
 
-async def update_user_memory(supabase_client, user_id: str, session_id: str, blueprint: dict):
+async def update_user_memory(supabase_client, user_id: str, session_id: str, blueprint: dict, socra_ai=None):
     mem = await get_user_memory(supabase_client, user_id)
-    
+
+    if any(s.get("session_id") == session_id for s in mem.get("session_summaries", [])):
+        return mem
+
     now_iso = datetime.utcnow().isoformat()
-    
+
     # 1. Update session count
     mem["total_sessions"] += 1
     
@@ -89,28 +92,46 @@ async def update_user_memory(supabase_client, user_id: str, session_id: str, blu
     mem["moves_mastery"] = moves_mastery
     
     # 3. Aggregate insights
-    all_insights = set(mem.get("all_insights", []))
-    for insight in blueprint.get("unlocked_insights", []):
-        all_insights.add(insight)
-    mem["all_insights"] = list(all_insights)
+    if socra_ai:
+        mem["all_insights"] = await socra_ai.merge_semantic_list(
+            mem.get("all_insights", []),
+            blueprint.get("unlocked_insights", []),
+            list_type="insights"
+        )
+    else:
+        all_insights = set(mem.get("all_insights", []))
+        for insight in blueprint.get("unlocked_insights", []):
+            all_insights.add(insight)
+        mem["all_insights"] = list(all_insights)
     
     # 4. Persistence of Strengths & Challenges
     new_strengths = blueprint.get("student_strengths", [])
     new_challenges = blueprint.get("challenge_patterns", [])
     
-    mem["persistent_strengths"] = _update_strengths_challenges(
-        mem.get("persistent_strengths", []), 
-        new_strengths, 
-        mem.get("session_summaries", []), 
-        "strengths"
-    )
-    
-    mem["recurring_challenges"] = _update_strengths_challenges(
-        mem.get("recurring_challenges", []), 
-        new_challenges, 
-        mem.get("session_summaries", []), 
-        "challenges"
-    )
+    if socra_ai:
+        mem["persistent_strengths"] = await socra_ai.merge_semantic_list(
+            mem.get("persistent_strengths", []),
+            new_strengths,
+            list_type="strengths"
+        )
+        mem["recurring_challenges"] = await socra_ai.merge_semantic_list(
+            mem.get("recurring_challenges", []),
+            new_challenges,
+            list_type="challenges"
+        )
+    else:
+        mem["persistent_strengths"] = _update_strengths_challenges(
+            mem.get("persistent_strengths", []),
+            new_strengths,
+            mem.get("session_summaries", []),
+            "strengths"
+        )
+        mem["recurring_challenges"] = _update_strengths_challenges(
+            mem.get("recurring_challenges", []),
+            new_challenges,
+            mem.get("session_summaries", []),
+            "challenges"
+        )
     
     # 5. Score History
     score = blueprint.get("final_score", 0)

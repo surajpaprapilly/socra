@@ -5,6 +5,7 @@ from typing import List, Optional, Dict, Any
 class ChatMessageBase(BaseModel):
     role: str
     content: str
+    metadata: Optional[Dict[str, Any]] = None
 
 class StartSessionRequest(BaseModel):
     question: str
