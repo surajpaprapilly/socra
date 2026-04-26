@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../context/ToastContext';
 
 const PremiumModal = ({ isOpen, onClose }) => {
+  const { showToast } = useToast();
   return (
     <AnimatePresence>
       {isOpen && (
@@ -48,7 +50,7 @@ const PremiumModal = ({ isOpen, onClose }) => {
               <div className="flex flex-col gap-4">
                 <button 
                   className="w-full py-4 px-6 bg-amber text-layer1 font-bold text-lg hover:bg-amber/90 transition-colors flex items-center justify-center gap-2"
-                  onClick={() => alert('Stripe Checkout Integration coming soon!')}
+                  onClick={() => showToast('Stripe checkout coming soon — check back later.', 'info')}
                 >
                   Upgrade to Premium
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

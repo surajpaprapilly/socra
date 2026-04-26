@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { SessionProvider, useSession } from './context/SessionContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider, useToast } from './context/ToastContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginScreen from './components/auth/LoginScreen';
 import LandingScreen from './components/LandingScreen';
@@ -18,7 +19,7 @@ import ProfileScreen from './components/profile/ProfileScreen';
 import EvalList from './components/EvalList';
 import EvalViewer from './components/EvalViewer';
 import PremiumModal from './components/PremiumModal';
-import { supabase, fetchWithAuth, BASE_URL } from './lib/supabase';
+import { fetchWithAuth, fetchWithTimeout, BASE_URL } from './lib/supabase';
 
 // Helper component to handle Test Mode initialization
 function TestModeInit({ onStartTest }) {
@@ -26,7 +27,7 @@ function TestModeInit({ onStartTest }) {
     const navigate = useNavigate();
     const { reaction } = useSession();
     const [existingSessions, setExistingSessions] = useState(null);
-    
+
     useEffect(() => {
         if (!location.state?.question) {
             navigate('/');
@@ -40,7 +41,7 @@ function TestModeInit({ onStartTest }) {
                     const data = await res.json();
                     const qStr = location.state.question.trim().toLowerCase();
                     const matched = (data.sessions || []).filter(s => s.question.trim().toLowerCase() === qStr);
-                    
+
                     if (matched.length > 0) {
                         setExistingSessions(matched);
                         return;
@@ -49,7 +50,6 @@ function TestModeInit({ onStartTest }) {
             } catch (e) {
                 console.error(e);
             }
-            // Fallback or no existing session
             onStartTest(location.state.question, reaction);
         };
         checkExisting();
@@ -62,13 +62,13 @@ function TestModeInit({ onStartTest }) {
                     You have <span className="text-amber">{existingSessions.length}</span> previous attempt{existingSessions.length > 1 ? 's' : ''} for this question.
                 </p>
                 <div className="flex space-x-6">
-                    <button 
+                    <button
                         onClick={() => navigate(`/test/${existingSessions[0].session_id}`)}
                         className="px-6 py-3 bg-amber/10 border border-amber text-amber font-mono tracking-widest uppercase text-xs hover:bg-amber/20 transition-all"
                     >
                         Continue Attempt {existingSessions.length} →
                     </button>
-                    <button 
+                    <button
                         onClick={() => onStartTest(location.state.question, reaction)}
                         className="px-6 py-3 bg-transparent border border-borderDark text-textMuted font-mono tracking-widest uppercase text-xs hover:text-textDefault hover:border-borderDark transition-all"
                     >
@@ -91,13 +91,11 @@ function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resum
     const { id } = useParams();
 
     useEffect(() => {
-        // If the URL id doesn't match the state sessionId, fetch from DB
         if (!isRehydrating && id && sessionId !== id) {
             onRehydrate(id);
         }
     }, [id, sessionId, isRehydrating, onRehydrate]);
 
-    // Only run cleanup when the component UNMOUNTS (e.g. going back to Bank)
     useEffect(() => {
         return () => {
             if (onClearSession) {
@@ -106,7 +104,6 @@ function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resum
         };
     }, [onClearSession]);
 
-    // Show loading if we are actively fetching, or if the state hasn't caught up to the URL
     if (isRehydrating || sessionId !== id) {
         return (
             <div className="h-[calc(100vh-64px)] w-full flex items-center justify-center text-amber font-mono animate-pulse">
@@ -117,7 +114,7 @@ function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resum
 
     return (
         <ChatInterface
-            key={id} // crucial to remount if jumping between sessions
+            key={id}
             sessionId={id}
             initialQuestion={initialQuestion}
             initialMessage={initialMessage}
@@ -131,16 +128,16 @@ function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resum
 function AppRoutes() {
   const navigate = useNavigate();
   const { isDeveloper } = useAuth();
+  const { showToast } = useToast();
 
-  // We keep this centralized for Test mode
   const [initialQuestion, setInitialQuestion] = useState("");
   const [initialMessage, setInitialMessage] = useState("");
   const [sessionId, setSessionId] = useState(null);
-  const [resumeHistory, setResumeHistory] = useState(null); // For re-hydrating from DB
+  const [resumeHistory, setResumeHistory] = useState(null);
   const [initialTurn, setInitialTurn] = useState(1);
   const [initialScore, setInitialScore] = useState(0);
   const [isRehydrating, setIsRehydrating] = useState(false);
-  
+
   const handleClearSession = useCallback(() => {
       setSessionId(null);
       setResumeHistory(null);
@@ -149,7 +146,7 @@ function AppRoutes() {
       setInitialQuestion("");
       setInitialMessage("");
   }, []);
-  
+
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [devResetting, setDevResetting] = useState(false);
 
@@ -157,16 +154,10 @@ function AppRoutes() {
     try {
       const payload = { question };
       if (reaction) payload.reaction = reaction;
-      
-      const { data: authData } = await supabase.auth.getSession();
-      const token = authData.session?.access_token;
-      
-      const response = await fetch(`${BASE_URL}/api/session/start`, {
+
+      const response = await fetchWithTimeout(`${BASE_URL}/api/session/start`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
@@ -185,20 +176,19 @@ function AppRoutes() {
       navigate(`/test/${data.session_id}`);
     } catch (error) {
       console.error("Error starting session:", error);
-      alert("Failed to connect to Socra API. Make sure the backend is running.");
+      const msg = error.isTimeout
+        ? 'Session start timed out. Make sure the backend is running.'
+        : 'Failed to connect to Socra API. Make sure the backend is running.';
+      showToast(msg, 'error');
     }
   };
 
-  // Re-hydrate session from DB when navigating directly to /test/:id
   const handleRehydrateSession = useCallback(async (id) => {
     setIsRehydrating(true);
     try {
-      const { data: authData } = await supabase.auth.getSession();
-      const token = authData.session?.access_token;
-      const res = await fetch(`${BASE_URL}/api/session/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetchWithTimeout(`${BASE_URL}/api/session/${id}`);
       if (!res.ok) {
+        showToast('Session not found — returning home.', 'error');
         navigate('/');
         return;
       }
@@ -211,29 +201,28 @@ function AppRoutes() {
       setInitialScore(data.blueprint?.final_score || 0);
     } catch (e) {
       console.error('Failed to re-hydrate session:', e);
+      const msg = e.isTimeout
+        ? 'Session load timed out — returning home.'
+        : 'Could not load session — returning home.';
+      showToast(msg, 'error');
       navigate('/');
     } finally {
       setIsRehydrating(false);
     }
-  }, [navigate]);
+  }, [navigate, showToast]);
 
   const handleDevReset = async () => {
     if (!window.confirm('⚡ Dev: Reset all sessions and blueprints for your account?')) return;
     setDevResetting(true);
     try {
-      const { data: authData } = await supabase.auth.getSession();
-      const token = authData.session?.access_token;
-      const res = await fetch(`${BASE_URL}/api/dev/reset-sessions`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetchWithTimeout(`${BASE_URL}/api/dev/reset-sessions`, { method: 'DELETE' });
       if (res.ok) {
-        alert('✅ Sessions reset. You can now test from scratch.');
+        showToast('Sessions reset. You can now test from scratch.', 'success');
       } else {
-        alert('❌ Reset failed — check backend logs.');
+        showToast('Reset failed — check backend logs.', 'error');
       }
-    } catch (e) {
-      alert('❌ Could not reach the backend.');
+    } catch {
+      showToast('Could not reach the backend.', 'error');
     } finally {
       setDevResetting(false);
     }
@@ -245,7 +234,6 @@ function AppRoutes() {
       <NavBar />
       <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
 
-      {/* Dev Mode Reset Button — only visible to developer accounts */}
       {isDeveloper && (
         <button
           id="dev-reset-sessions-btn"
@@ -260,8 +248,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<LandingScreen />} />
         <Route path="/login" element={<LoginScreen />} />
-        
-        {/* Protected Routes */}
+
         <Route path="/app" element={<ProtectedRoute><ThemeSelection /></ProtectedRoute>} />
         <Route path="/conflicts/:themeId" element={<ProtectedRoute><ConflictSelection /></ProtectedRoute>} />
         <Route path="/conflict/:conflictId/read" element={<ProtectedRoute><ConflictReading /></ProtectedRoute>} />
@@ -271,7 +258,7 @@ function AppRoutes() {
         <Route path="/learn" element={<ProtectedRoute><LearnMode /></ProtectedRoute>} />
 
         <Route path="/test/init" element={<ProtectedRoute><TestModeInit onStartTest={handleStartTest} /></ProtectedRoute>} />
-        
+
         <Route path="/test/:id" element={
           <ProtectedRoute>
             <SessionRouteHandler
@@ -302,9 +289,11 @@ function App() {
   return (
     <AuthProvider>
       <SessionProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ToastProvider>
       </SessionProvider>
     </AuthProvider>
   );
