@@ -7,7 +7,7 @@ import MilestoneCard from './MilestoneCard';
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { fetchWithAuth } from '../lib/supabase';
+import { fetchWithAuth, BASE_URL } from '../lib/supabase';
 
 
 const MessageBubble = ({ role, content }) => {
@@ -68,9 +68,8 @@ const getPhaseBanner = (phaseNum) => {
 
 export default function ChatInterface({ sessionId, initialQuestion, initialMessage, resumeHistory, initialTurn = 1, initialScore = 0 }) {
     const { reaction } = useSession();
-    
+
     const [messages, setMessages] = useState(() => {
-        // If resuming, pre-populate from DB history; otherwise start with initial AI message
         if (resumeHistory && resumeHistory.length > 0) return resumeHistory;
         if (initialMessage) return [{ role: 'assistant', content: initialMessage }];
         return [];
@@ -78,7 +77,6 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     const [input, setInput] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
 
-    // Metadata states - start at phase 2 if reaction was provided
     const [phase, setPhase] = useState(() => {
         if (initialTurn && initialTurn > 1) return Math.min(initialTurn, 5);
         return reaction ? 2 : 1;
@@ -87,16 +85,13 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     const [showFinalScreen, setShowFinalScreen] = useState(false);
     const [platoReflection, setPlatoReflection] = useState(null);
 
-    // Live Signaling states
     const [score, setScore] = useState(initialScore);
     const [toastMessage, setToastMessage] = useState(null);
 
-    // Living Blueprint states
     const [blueprint, setBlueprint] = useState(null);
     const [tension, setTension] = useState(null);
     const [evidence, setEvidence] = useState([]);
 
-    // Milestone card queue
     const [milestoneQueue, setMilestoneQueue] = useState([]);
     const handleMilestoneReached = useCallback((flag) => {
         setMilestoneQueue(q => [...q, flag]);
@@ -104,6 +99,9 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     const handleMilestoneDismiss = useCallback(() => {
         setMilestoneQueue(q => q.slice(1));
     }, []);
+
+    // Mobile tab state — chat is the default view
+    const [mobileTab, setMobileTab] = useState('chat');
 
     const messagesEndRef = useRef(null);
 
@@ -114,10 +112,9 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     const handleStream = async (userMsg) => {
         setIsStreaming(true);
         try {
-            // Create empty assistant message placeholder to stream into
             setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
-            const response = await fetchWithAuth('http://localhost:8000/api/session/chat', {
+            const response = await fetchWithAuth(`${BASE_URL}/api/session/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: sessionId, message: userMsg })
@@ -136,7 +133,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
 
                 const chunk = decoder.decode(value, { stream: true });
                 sseBuffer += chunk;
-                
+
                 const lines = sseBuffer.split('\n');
                 sseBuffer = lines.pop();
 
@@ -158,17 +155,15 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                         if (meta.current_phase > phase && meta.current_phase <= 5) {
                                             setPhase(meta.current_phase);
                                             setMessages(prev => [...prev, { role: 'system_banner', content: getPhaseBanner(meta.current_phase) }]);
-                                            // Autopsy milestone: Socra moving to phase 2 is the
-                                            // authoritative signal that all terms are defined.
                                             if (meta.current_phase === 2) {
                                                 setMilestoneQueue(q => [...q, 'question_autopsy_complete']);
                                             }
                                         }
                                         if (meta.current_phase > 5 && !isFinished) {
-                                            setIsFinished(true); // Trigger payoff screen
+                                            setIsFinished(true);
                                             setTimeout(async () => {
                                                 try {
-                                                    const refRes = await fetchWithAuth(`http://localhost:8000/api/plato/reflect?session_id=${sessionId}`);
+                                                    const refRes = await fetchWithAuth(`${BASE_URL}/api/plato/reflect?session_id=${sessionId}`);
                                                     if (refRes.ok) {
                                                         const refData = await refRes.json();
                                                         setPlatoReflection(refData.message);
@@ -186,14 +181,11 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                     if (meta.insight_unlocked) {
                                         setToastMessage(meta.insight_unlocked);
                                         setTimeout(() => setToastMessage(null), 5000);
-                                        
-                                        // Attempt to fetch Plato insight note (if repeated)
-                                        fetchWithAuth(`http://localhost:8000/api/plato/insight-note?insight=${encodeURIComponent(meta.insight_unlocked)}&session_id=${sessionId}`)
+
+                                        fetchWithAuth(`${BASE_URL}/api/plato/insight-note?insight=${encodeURIComponent(meta.insight_unlocked)}&session_id=${sessionId}`)
                                             .then(res => res.json())
                                             .then(data => {
                                                 if (data.message) {
-                                                    // Show Plato's message as a small toast or inline message
-                                                    // For MVP, we can append it as a chat bubble
                                                     setMessages(prev => [...prev, { role: 'plato', content: data.message }]);
                                                 }
                                             })
@@ -205,7 +197,6 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                             }
                         } else if (currentEvent === 'message') {
                             try {
-                                // Parse the JSON encoded string chunk
                                 let textChunk = "";
                                 if (dataStr.startsWith('"') && dataStr.endsWith('"')) {
                                     textChunk = JSON.parse(dataStr);
@@ -224,7 +215,6 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                 });
                             } catch (e) {
                                 console.error("Message parse error", e);
-                                // Fallback literal appending if not json string
                                 currentTurnOutput += dataStr;
                                 setMessages(prev => {
                                     const updated = [...prev];
@@ -250,19 +240,18 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
         const userMsg = input.trim();
         setInput('');
         setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
-        
+
         await handleStream(userMsg);
     };
 
     useEffect(() => {
         const fetchInitialGreeting = async () => {
             try {
-                const res = await fetchWithAuth(`http://localhost:8000/api/plato/greeting?session_id=${sessionId}`);
+                const res = await fetchWithAuth(`${BASE_URL}/api/plato/greeting?session_id=${sessionId}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.message) {
                         setMessages([{ role: 'plato', content: data.message }]);
-                        // Then trigger Socra
                         handleStream("");
                     }
                 } else {
@@ -274,7 +263,6 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
             }
         };
 
-        // Only trigger initial stream for brand-new sessions (no resumeHistory, no initialMessage)
         if (!resumeHistory && !initialMessage && messages.length === 0 && !isStreaming) {
             fetchInitialGreeting();
         }
@@ -282,11 +270,38 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
 
 
     return (
-        <div className="flex h-screen w-full relative z-10 flex-col md:flex-row">
-            {/* 55% Conversation Area */}
-            <div className="w-full md:w-[55%] h-[50vh] md:h-full flex flex-col border-r-0 md:border-r border-b md:border-b-0 border-borderDark/40 relative overflow-hidden">
+        <div className="flex h-[calc(100dvh-4rem)] w-full relative z-10 flex-col md:flex-row">
 
-                {/* Top bar minimal with Score */}
+            {/* Mobile-only tab bar — hidden at md+ */}
+            <div role="tablist" className="md:hidden flex shrink-0 border-b border-borderDark/40 bg-[#11100D]">
+                <button
+                    role="tab"
+                    aria-selected={mobileTab === 'chat'}
+                    onClick={() => setMobileTab('chat')}
+                    className={`flex-1 py-3 text-xs font-mono uppercase tracking-widest transition-colors ${
+                        mobileTab === 'chat' ? 'text-amber border-b-2 border-amber' : 'text-textMuted/60'
+                    }`}
+                >
+                    ◆ Chat
+                </button>
+                <button
+                    role="tab"
+                    aria-selected={mobileTab === 'blueprint'}
+                    onClick={() => setMobileTab('blueprint')}
+                    className={`flex-1 py-3 text-xs font-mono uppercase tracking-widest transition-colors ${
+                        mobileTab === 'blueprint' ? 'text-amber border-b-2 border-amber' : 'text-textMuted/60'
+                    }`}
+                >
+                    ◈ Blueprint
+                </button>
+            </div>
+
+            {/* Conversation panel */}
+            <div
+                data-panel="chat"
+                className={`${mobileTab === 'chat' ? 'flex' : 'hidden'} md:flex flex-col flex-1 md:flex-none md:w-[55%] md:h-full border-r-0 md:border-r border-borderDark/40 overflow-hidden relative`}
+            >
+                {/* Top bar */}
                 <div className="min-h-16 flex items-center justify-between px-8 py-3 bg-[#11100D]/95 backdrop-blur-md border-b border-borderDark/40 z-30 shrink-0">
                     <div className="flex items-center overflow-hidden">
                         <span className="font-display text-xl text-textDefault tracking-wide shrink-0">Socra</span>
@@ -304,7 +319,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                     </div>
                 </div>
 
-                {/* Floating Toast Notification */}
+                {/* Toast notification */}
                 {toastMessage && (
                     <div className="absolute top-20 right-8 z-50 animate-slide-in pointer-events-none">
                         <div className="flex items-center px-4 py-3 bg-[#11100D]/95 border border-amber shadow-[0_0_20px_rgba(212,175,55,0.15)] rounded-sm">
@@ -317,8 +332,8 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                     </div>
                 )}
 
-                {/* Scrollable messages */}
-                <div className="flex-1 overflow-y-auto px-8 py-10 pb-32">
+                {/* Scrollable messages — only this region scrolls */}
+                <div className="flex-1 overflow-y-auto px-8 py-10 pb-6">
                     {messages.map((msg, idx) => {
                         if (msg.role === 'system_banner') {
                             return (
@@ -342,14 +357,17 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Milestone Card overlay */}
+                {/* Milestone card overlay — absolute within this relative panel */}
                 <MilestoneCard
                     milestone={milestoneQueue[0] || null}
                     onDismiss={handleMilestoneDismiss}
                 />
 
-                {/* Input Area */}
-                    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-background via-background to-transparent pt-12 pb-8 px-8 z-20">
+                {/* Input area — shrink-0 so it's always in view; safe-area inset handles notch/home bar */}
+                <div
+                    className="shrink-0 bg-gradient-to-t from-background via-background to-transparent pt-6 px-4 md:px-8 z-20"
+                    style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+                >
                     <form onSubmit={handleSubmit} className="relative group w-full xl:max-w-4xl">
                         <textarea
                             value={input}
@@ -377,8 +395,11 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                 </div>
             </div>
 
-            {/* 45% Blueprint Panel */}
-            <div className="w-full md:w-[45%] h-[50vh] md:h-full bg-[#11100D] flex flex-col relative overflow-y-auto overflow-x-hidden z-20">
+            {/* Blueprint panel */}
+            <div
+                data-panel="blueprint"
+                className={`${mobileTab === 'blueprint' ? 'flex' : 'hidden'} md:flex flex-col flex-1 md:flex-none md:w-[45%] md:h-full bg-[#11100D] overflow-hidden`}
+            >
                 <BlueprintPanel
                     sessionId={sessionId}
                     initialQuestion={initialQuestion}
@@ -387,10 +408,10 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
             </div>
 
             {showFinalScreen && (
-                <FinalBlueprint 
-                    insights={blueprint?.unlocked_insights || []} 
-                    blueprint={blueprint} 
-                    platoReflection={platoReflection} 
+                <FinalBlueprint
+                    insights={blueprint?.unlocked_insights || []}
+                    blueprint={blueprint}
+                    platoReflection={platoReflection}
                 />
             )}
         </div>

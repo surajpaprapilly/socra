@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchWithAuth } from '../../lib/supabase';
+import { fetchWithAuth, BASE_URL } from '../../lib/supabase';
 
 // Deep merge helper that ensures fields don't accidentally revert to null when the backend returns nulls due to partial LLM outputs
 const mergeBlueprintState = (prev, incoming) => {
@@ -97,7 +97,7 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
 
         const fetchBp = async () => {
             try {
-                const res = await fetchWithAuth(`http://localhost:8000/api/blueprint/${sessionId}`);
+                const res = await fetchWithAuth(`${BASE_URL}/api/blueprint/${sessionId}`);
                 if (res.ok) {
                     const data = await res.json();
                     setBlueprint(prev => mergeBlueprintState(prev, data));
@@ -143,7 +143,7 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
     const handleExport = async () => {
         setExportError(false);
         try {
-            const res = await fetchWithAuth(`http://localhost:8000/api/blueprint/${sessionId}/export`);
+            const res = await fetchWithAuth(`${BASE_URL}/api/blueprint/${sessionId}/export`);
             if (!res.ok) throw new Error("Export failed");
             const data = await res.json();
             
@@ -243,9 +243,9 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
     const sq = blueprint.session_quality || {};
 
     return (
-        <div className="flex flex-col w-full min-h-full pb-32">
-            {/* 1. Header Sticky */}
-            <div className="sticky top-0 bg-[#11100D]/95 backdrop-blur-md z-30 px-8 py-6 border-b border-borderDark/40 flex items-start justify-between">
+        <div className="flex flex-col h-full">
+            {/* Header — shrink-0, never scrolls away */}
+            <div className="shrink-0 bg-[#11100D]/95 backdrop-blur-md z-30 px-8 py-6 border-b border-borderDark/40 flex items-start justify-between">
                 <h2 className="font-serif text-lg leading-relaxed text-textDefault max-w-[90%]">
                     {initialQuestion || blueprint.question}
                 </h2>
@@ -254,6 +254,8 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
                 )}
             </div>
 
+            {/* Scrollable content — only this region scrolls */}
+            <div className="flex-1 overflow-y-auto">
             <div className="px-8 py-8 flex flex-col space-y-12">
                 {/* Unlocked Insights Badges */}
                 {blueprint.unlocked_insights && blueprint.unlocked_insights.length > 0 && (
@@ -407,10 +409,14 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
                     </span>
                 </div>
             </div>
+            </div>{/* end scrollable content */}
 
-            {/* Download Button Header */}
-            <div className="fixed bottom-0 right-0 w-full md:w-[45%] bg-[#11100D]/95 backdrop-blur-md border-t border-borderDark/40 p-6 z-30">
-                <button 
+            {/* Download button — shrink-0 footer, always visible at panel bottom */}
+            <div
+                className="shrink-0 bg-[#11100D]/95 backdrop-blur-md border-t border-borderDark/40 px-6 pt-6"
+                style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+            >
+                <button
                     onClick={handleExport}
                     className="w-full py-4 bg-textDefault text-background font-display uppercase tracking-widest hover:bg-amber transition-colors flex flex-col items-center justify-center"
                 >

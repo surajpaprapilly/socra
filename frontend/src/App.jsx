@@ -18,7 +18,7 @@ import ProfileScreen from './components/profile/ProfileScreen';
 import EvalList from './components/EvalList';
 import EvalViewer from './components/EvalViewer';
 import PremiumModal from './components/PremiumModal';
-import { supabase, fetchWithAuth } from './lib/supabase';
+import { supabase, fetchWithAuth, BASE_URL } from './lib/supabase';
 
 // Helper component to handle Test Mode initialization
 function TestModeInit({ onStartTest }) {
@@ -35,7 +35,7 @@ function TestModeInit({ onStartTest }) {
 
         const checkExisting = async () => {
             try {
-                const res = await fetchWithAuth('http://localhost:8000/api/sessions');
+                const res = await fetchWithAuth(`${BASE_URL}/api/sessions`);
                 if (res.ok) {
                     const data = await res.json();
                     const qStr = location.state.question.trim().toLowerCase();
@@ -161,7 +161,7 @@ function AppRoutes() {
       const { data: authData } = await supabase.auth.getSession();
       const token = authData.session?.access_token;
       
-      const response = await fetch('http://localhost:8000/api/session/start', {
+      const response = await fetch(`${BASE_URL}/api/session/start`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -195,7 +195,7 @@ function AppRoutes() {
     try {
       const { data: authData } = await supabase.auth.getSession();
       const token = authData.session?.access_token;
-      const res = await fetch(`http://localhost:8000/api/session/${id}`, {
+      const res = await fetch(`${BASE_URL}/api/session/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) {
@@ -223,7 +223,7 @@ function AppRoutes() {
     try {
       const { data: authData } = await supabase.auth.getSession();
       const token = authData.session?.access_token;
-      const res = await fetch('http://localhost:8000/api/dev/reset-sessions', {
+      const res = await fetch(`${BASE_URL}/api/dev/reset-sessions`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
