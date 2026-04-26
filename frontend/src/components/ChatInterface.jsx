@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSession } from '../context/SessionContext';
+import { useToast } from '../context/ToastContext';
 import BlueprintPanel from './learn/BlueprintPanel';
 import NudgeButton from './NudgeButton';
 import FinalBlueprint from './FinalBlueprint';
@@ -68,6 +69,7 @@ const getPhaseBanner = (phaseNum) => {
 
 export default function ChatInterface({ sessionId, initialQuestion, initialMessage, resumeHistory, initialTurn = 1, initialScore = 0 }) {
     const { reaction } = useSession();
+    const { showToast } = useToast();
 
     const [messages, setMessages] = useState(() => {
         if (resumeHistory && resumeHistory.length > 0) return resumeHistory;
@@ -76,6 +78,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     });
     const [input, setInput] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
+    const [streamHanging, setStreamHanging] = useState(false);
 
     const [phase, setPhase] = useState(() => {
         if (initialTurn && initialTurn > 1) return Math.min(initialTurn, 5);
@@ -100,7 +103,6 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
         setMilestoneQueue(q => q.slice(1));
     }, []);
 
-    // Mobile tab state — chat is the default view
     const [mobileTab, setMobileTab] = useState('chat');
 
     const messagesEndRef = useRef(null);
@@ -111,13 +113,27 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
 
     const handleStream = async (userMsg) => {
         setIsStreaming(true);
+        setStreamHanging(false);
+
+        const controller = new AbortController();
+        let firstChunkReceived = false;
+
+        const hangTimer15 = setTimeout(() => {
+            if (!firstChunkReceived) setStreamHanging(true);
+        }, 15000);
+
+        const hangTimer30 = setTimeout(() => {
+            if (!firstChunkReceived) controller.abort();
+        }, 30000);
+
         try {
             setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
             const response = await fetchWithAuth(`${BASE_URL}/api/session/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: sessionId, message: userMsg })
+                body: JSON.stringify({ session_id: sessionId, message: userMsg }),
+                signal: controller.signal
             });
 
             const reader = response.body.getReader();
@@ -130,6 +146,13 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
+
+                if (!firstChunkReceived) {
+                    firstChunkReceived = true;
+                    clearTimeout(hangTimer15);
+                    clearTimeout(hangTimer30);
+                    setStreamHanging(false);
+                }
 
                 const chunk = decoder.decode(value, { stream: true });
                 sseBuffer += chunk;
@@ -227,8 +250,25 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                 }
             }
         } catch (err) {
-            console.error(err);
+            // Remove the empty assistant placeholder added at stream start
+            setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === 'assistant' && last?.content === '') {
+                    return prev.slice(0, -1);
+                }
+                return prev;
+            });
+
+            if (err.name === 'AbortError') {
+                showToast('SocraAI is not responding — please try again.', 'error');
+            } else {
+                console.error(err);
+                showToast('Connection error. Please check your network.', 'error');
+            }
         } finally {
+            clearTimeout(hangTimer15);
+            clearTimeout(hangTimer30);
+            setStreamHanging(false);
             setIsStreaming(false);
         }
     };
@@ -319,7 +359,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                     </div>
                 </div>
 
-                {/* Toast notification */}
+                {/* Toast notification (insight unlocked) */}
                 {toastMessage && (
                     <div className="absolute top-20 right-8 z-50 animate-slide-in pointer-events-none">
                         <div className="flex items-center px-4 py-3 bg-[#11100D]/95 border border-amber shadow-[0_0_20px_rgba(212,175,55,0.15)] rounded-sm">
@@ -354,16 +394,23 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                             <div className="font-serif text-lg text-textMuted/50 animate-pulse">Thinking...</div>
                         </div>
                     )}
+                    {streamHanging && (
+                        <div className="flex justify-center w-full my-4">
+                            <span className="font-mono text-[10px] uppercase tracking-widest text-textMuted/50 animate-pulse">
+                                Still thinking — this is taking a moment...
+                            </span>
+                        </div>
+                    )}
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Milestone card overlay — absolute within this relative panel */}
+                {/* Milestone card overlay */}
                 <MilestoneCard
                     milestone={milestoneQueue[0] || null}
                     onDismiss={handleMilestoneDismiss}
                 />
 
-                {/* Input area — shrink-0 so it's always in view; safe-area inset handles notch/home bar */}
+                {/* Input area */}
                 <div
                     className="shrink-0 bg-gradient-to-t from-background via-background to-transparent pt-6 px-4 md:px-8 z-20"
                     style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}

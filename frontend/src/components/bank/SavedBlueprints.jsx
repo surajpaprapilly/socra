@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchWithAuth } from '../../lib/supabase';
+import { fetchWithAuth, BASE_URL } from '../../lib/supabase';
+import { useToast } from '../../context/ToastContext';
 
 // ─── Quality Badge ─────────────────────────────────────────────────────────────
 function QualityBadge({ label, active }) {
@@ -40,38 +41,40 @@ export default function SavedBlueprints() {
     const [sessions, setSessions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const navigate = useNavigate();
+    const { showToast } = useToast();
 
     const handleDeleteSession = async (sessionId) => {
-        if (!window.confirm("Are you sure you want to delete this session? This cannot be undone.")) return;
-        
         try {
-            const res = await fetchWithAuth(`http://localhost:8000/api/session/${sessionId}`, {
+            const res = await fetchWithAuth(`${BASE_URL}/api/session/${sessionId}`, {
                 method: 'DELETE'
             });
             if (res.ok) {
                 setSessions(curr => curr.filter(s => s.session_id !== sessionId));
+                showToast('Session deleted.', 'success');
             } else {
-                alert("Failed to delete session.");
+                showToast('Failed to delete session.', 'error');
             }
         } catch (e) {
             console.error(e);
-            alert("Error deleting session.");
+            showToast('Error deleting session — check your connection.', 'error');
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
     useEffect(() => {
         const load = async () => {
             try {
-                const res = await fetchWithAuth('http://localhost:8000/api/sessions');
+                const res = await fetchWithAuth(`${BASE_URL}/api/sessions`);
                 if (res.ok) {
                     const data = await res.json();
-                    
-                    // Compute attempt numbers chronologically
+
                     const fetchedSessions = data.sessions || [];
                     const grouped = {};
                     const chronological = [...fetchedSessions].reverse();
-                    
+
                     chronological.forEach(s => {
                         const key = s.question.trim().toLowerCase();
                         if (!grouped[key]) grouped[key] = 0;
@@ -79,13 +82,12 @@ export default function SavedBlueprints() {
                         s.attemptNumber = grouped[key];
                         s.totalAttemptsForQuestion = 0;
                     });
-                    
+
                     chronological.forEach(s => {
                         const key = s.question.trim().toLowerCase();
                         s.totalAttemptsForQuestion = grouped[key];
                     });
-                    
-                    // Unified timeline keeps them newest-first, no filtering on thesis!
+
                     setSessions(chronological.reverse());
                 }
             } catch (e) {
@@ -157,15 +159,15 @@ export default function SavedBlueprints() {
                             });
                             const phaseLabel = session.is_complete ? 'Complete' : `Phase ${Math.min(session.turn, 5)} / 5`;
                             const thesis = bp.thesis;
-                            
+                            const isConfirming = confirmDeleteId === session.session_id;
+
                             return (
                                 <div
                                     key={session.session_id}
-                                    onClick={() => navigate(`/test/${session.session_id}`)}
+                                    onClick={() => !isConfirming && navigate(`/test/${session.session_id}`)}
                                     className="group bg-[#141210] border border-[#2A2825] hover:border-amber/20 transition-all duration-300 p-6 md:p-8 cursor-pointer relative overflow-hidden animate-in fade-in slide-in-from-bottom-6"
                                     style={{ animationDelay: `${Math.min(idx, 10) * 80}ms`, animationFillMode: 'both' }}
                                 >
-                                    {/* Completed shimmer overlay */}
                                     {session.is_complete && (
                                         <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                                             style={{ background: 'linear-gradient(135deg, rgba(122,158,126,0.03) 0%, transparent 60%)' }} />
@@ -207,7 +209,6 @@ export default function SavedBlueprints() {
                                         </div>
                                     )}
 
-                                    {/* Quality badges */}
                                     {session.turn > 1 && (
                                         <div className="flex flex-wrap gap-2 mb-6">
                                             <QualityBadge label="Autopsy" active={sq.question_autopsy_complete} />
@@ -218,15 +219,33 @@ export default function SavedBlueprints() {
                                     )}
 
                                     <div className="flex justify-between items-center border-t border-borderDark/20 pt-5">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteSession(session.session_id);
-                                            }}
-                                            className="font-mono text-[10px] uppercase tracking-widest px-3 py-2 text-textMuted/40 hover:text-red-400/80 transition-colors"
-                                        >
-                                            [ ✕ Delete ]
-                                        </button>
+                                        {isConfirming ? (
+                                            <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                                                <span className="font-mono text-[10px] uppercase tracking-widest text-red-400/80">Delete?</span>
+                                                <button
+                                                    onClick={() => handleDeleteSession(session.session_id)}
+                                                    className="font-mono text-[10px] uppercase tracking-widest px-3 py-1.5 border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
+                                                >
+                                                    Confirm
+                                                </button>
+                                                <button
+                                                    onClick={() => setConfirmDeleteId(null)}
+                                                    className="font-mono text-[10px] uppercase tracking-widest px-3 py-1.5 border border-borderDark text-textMuted hover:text-textDefault transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setConfirmDeleteId(session.session_id);
+                                                }}
+                                                className="font-mono text-[10px] uppercase tracking-widest px-3 py-2 text-textMuted/40 hover:text-red-400/80 transition-colors"
+                                            >
+                                                [ ✕ Delete ]
+                                            </button>
+                                        )}
                                         <button
                                             className="font-mono text-xs uppercase tracking-widest px-5 py-2.5 border transition-all duration-200 flex items-center gap-2 border-borderDark text-textMuted group-hover:bg-amber/10 group-hover:border-amber group-hover:text-amber"
                                         >

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useSession } from '../context/SessionContext';
-import { fetchWithAuth } from '../lib/supabase';
+import { useToast } from '../context/ToastContext';
+import { fetchWithAuth, BASE_URL } from '../lib/supabase';
 
 export default function FinalBlueprint({ insights, blueprint, platoReflection }) {
     const [copied, setCopied] = useState(false);
     const [savedToBank, setSavedToBank] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { customQuestion, readings, canvasData } = useSession();
+    const { showToast } = useToast();
 
     const handleExport = () => {
         if (!blueprint) return;
@@ -41,7 +43,7 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
     const handleSaveToBank = async () => {
         if (!blueprint || isSaving || savedToBank) return;
         setIsSaving(true);
-        
+
         try {
             const body = {
                 question: customQuestion || "Final Essay Plan",
@@ -52,7 +54,7 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
                 canvas_data: canvasData || null
             };
 
-            const response = await fetchWithAuth('http://localhost:8000/api/bank/add', {
+            const response = await fetchWithAuth(`${BASE_URL}/api/bank/add`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -61,11 +63,11 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
             if (response.ok) {
                 setSavedToBank(true);
             } else {
-                alert("Failed to save to Blueprints.");
+                showToast('Failed to save blueprint.', 'error');
             }
         } catch (e) {
             console.error(e);
-            alert("Error saving to Blueprints.");
+            showToast('Error saving blueprint — check your connection.', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -99,7 +101,6 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
 
                 {blueprint ? (
                     <div className="space-y-6 font-serif text-lg text-textDefault/90 mb-12">
-                        {/* Render Spine Sections */}
                         {[
                             { label: 'THESIS', text: blueprint.thesis },
                             { label: 'ARGUMENT 1', text: blueprint.arg1 },
