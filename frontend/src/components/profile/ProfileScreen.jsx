@@ -111,7 +111,7 @@ export default function ProfileScreen() {
 
     if (loading) {
         return (
-            <div className="h-[calc(100vh-64px)] w-full flex items-center justify-center">
+            <div className="flex-1 w-full flex items-center justify-center">
                 <span className="font-mono text-amber text-xs animate-pulse tracking-widest uppercase">Fetching Profile...</span>
             </div>
         );
@@ -119,7 +119,7 @@ export default function ProfileScreen() {
 
     if (error) {
         return (
-            <div className="h-[calc(100vh-64px)] w-full flex flex-col items-center justify-center gap-6 px-6">
+            <div className="flex-1 w-full flex flex-col items-center justify-center gap-6 px-6">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-red-400/70 text-center max-w-sm">{error}</span>
                 <button
                     onClick={() => window.location.reload()}
@@ -132,7 +132,7 @@ export default function ProfileScreen() {
     }
 
     return (
-        <div className="min-h-[calc(100vh-64px)] w-full pb-32 animate-fade-in relative z-10">
+        <div className="flex-1 overflow-y-auto w-full pb-32 animate-fade-in relative z-10">
             <div className="max-w-6xl mx-auto px-6 py-12">
 
                 {/* Header & Stats Strip */}

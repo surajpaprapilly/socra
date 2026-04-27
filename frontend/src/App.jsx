@@ -6,11 +6,11 @@ import { ToastProvider, useToast } from './context/ToastContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginScreen from './components/auth/LoginScreen';
 import LandingScreen from './components/LandingScreen';
-import ThemeSelection from './components/ThemeSelection';
+import AppShell from './components/AppShell';
+import HomeView from './components/HomeView';
 import ConflictSelection from './components/conflicts/ConflictSelection';
 import ConflictReading from './components/conflicts/ConflictReading';
 
-import ModeChoice from './components/ModeChoice';
 import ChatInterface from './components/ChatInterface';
 import NavBar from './components/NavBar';
 import LearnMode from './components/learn/LearnMode';
@@ -57,7 +57,7 @@ function TestModeInit({ onStartTest }) {
 
     if (existingSessions) {
         return (
-            <div className="h-[calc(100vh-64px)] w-full flex flex-col items-center justify-center text-textDefault space-y-6">
+            <div className="h-full w-full flex flex-col items-center justify-center text-textDefault space-y-6">
                 <p className="font-serif text-lg max-w-md text-center">
                     You have <span className="text-amber">{existingSessions.length}</span> previous attempt{existingSessions.length > 1 ? 's' : ''} for this question.
                 </p>
@@ -80,7 +80,7 @@ function TestModeInit({ onStartTest }) {
     }
 
     return (
-        <div className="h-[calc(100vh-64px)] w-full flex items-center justify-center text-amber font-mono animate-pulse">
+        <div className="h-full w-full flex items-center justify-center text-amber font-mono animate-pulse">
             Initializing Session...
         </div>
     );
@@ -106,7 +106,7 @@ function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resum
 
     if (isRehydrating || sessionId !== id) {
         return (
-            <div className="h-[calc(100vh-64px)] w-full flex items-center justify-center text-amber font-mono animate-pulse">
+            <div className="h-full w-full flex items-center justify-center text-amber font-mono animate-pulse">
                 Loading Session...
             </div>
         );
@@ -127,8 +127,12 @@ function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resum
 
 function AppRoutes() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isDeveloper } = useAuth();
   const { showToast } = useToast();
+
+  const shellPaths = ['/app', '/test', '/learn', '/bank', '/profile'];
+  const isShellRoute = shellPaths.some(p => location.pathname.startsWith(p));
 
   const [initialQuestion, setInitialQuestion] = useState("");
   const [initialMessage, setInitialMessage] = useState("");
@@ -229,9 +233,9 @@ function AppRoutes() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-textDefault relative overflow-x-hidden font-mono pt-16">
+    <div className={`min-h-screen bg-background text-textDefault relative overflow-x-hidden font-mono ${!isShellRoute ? 'pt-16' : ''}`}>
       <div className="noise-overlay"></div>
-      <NavBar />
+      {!isShellRoute && <NavBar />}
       <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
 
       {isDeveloper && (
@@ -249,18 +253,20 @@ function AppRoutes() {
         <Route path="/" element={<LandingScreen />} />
         <Route path="/login" element={<LoginScreen />} />
 
-        <Route path="/app" element={<ProtectedRoute><ThemeSelection /></ProtectedRoute>} />
-        <Route path="/conflicts/:themeId" element={<ProtectedRoute><ConflictSelection /></ProtectedRoute>} />
-        <Route path="/conflict/:conflictId/read" element={<ProtectedRoute><ConflictReading /></ProtectedRoute>} />
-
-        <Route path="/mode" element={<ProtectedRoute><ModeChoice /></ProtectedRoute>} />
-
-        <Route path="/learn" element={<ProtectedRoute><LearnMode /></ProtectedRoute>} />
-
-        <Route path="/test/init" element={<ProtectedRoute><TestModeInit onStartTest={handleStartTest} /></ProtectedRoute>} />
-
-        <Route path="/test/:id" element={
-          <ProtectedRoute>
+        {/* ── Shell layout — sidebar always present ── */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppShell onStartTest={handleStartTest} />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/app"     element={<HomeView />} />
+          <Route path="/learn"   element={<LearnMode />} />
+          <Route path="/bank"    element={<SavedBlueprints />} />
+          <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/test/init" element={<TestModeInit onStartTest={handleStartTest} />} />
+          <Route path="/test/:id" element={
             <SessionRouteHandler
               sessionId={sessionId}
               initialQuestion={initialQuestion}
@@ -272,11 +278,11 @@ function AppRoutes() {
               onRehydrate={handleRehydrateSession}
               onClearSession={handleClearSession}
             />
-          </ProtectedRoute>
-        } />
+          } />
+        </Route>
 
-        <Route path="/bank" element={<ProtectedRoute><SavedBlueprints /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
+        <Route path="/conflicts/:themeId" element={<ProtectedRoute><ConflictSelection /></ProtectedRoute>} />
+        <Route path="/conflict/:conflictId/read" element={<ProtectedRoute><ConflictReading /></ProtectedRoute>} />
 
         <Route path="/eval-viewer" element={<ProtectedRoute><EvalList /></ProtectedRoute>} />
         <Route path="/eval-viewer/:runId" element={<ProtectedRoute><EvalViewer /></ProtectedRoute>} />

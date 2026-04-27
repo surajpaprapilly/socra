@@ -310,7 +310,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
 
 
     return (
-        <div className="flex h-[calc(100dvh-4rem)] w-full relative z-10 flex-col md:flex-row">
+        <div className="flex h-full w-full relative z-10 flex-col md:flex-row">
 
             {/* Mobile-only tab bar — hidden at md+ */}
             <div role="tablist" className="md:hidden flex shrink-0 border-b border-borderDark/40 bg-[#11100D]">
