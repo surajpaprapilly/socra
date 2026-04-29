@@ -5,6 +5,10 @@ const MILESTONE_CONTENT = {
         label: 'QUESTION AUTOPSY COMPLETE',
         statement: "You've done what most students skip — interrogating the question before arguing. That precision separates Band 3 from Band 4.",
     },
+    argument_sketch_complete: {
+        label: 'SKELETON COMPLETE',
+        statement: "Your essay has a spine. You know your position, your arguments, and the opposition's move. You could write this essay right now.",
+    },
     both_sides_argued: {
         label: 'BOTH SIDES ENGAGED',
         statement: "You've engaged the opposing view at its strongest. Cambridge examiners reward this — it signals a mature, balanced argument.",

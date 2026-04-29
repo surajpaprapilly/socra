@@ -55,6 +55,11 @@ async def patch_blueprint(session_id: str, update_data: dict, current_user: Opti
                 current_data["counter_argument"] = value
             else:
                 current_data["counter_argument"].update(value)
+        elif key == "conclusion" and isinstance(value, dict):
+            if current_data.get("conclusion") is None:
+                current_data["conclusion"] = value
+            else:
+                current_data["conclusion"].update({k: v for k, v in value.items() if v is not None})
         elif key == "key_terms" and isinstance(value, list):
             for new_term in value:
                 term_str = new_term.get("term")

@@ -182,6 +182,11 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
         if not sq["both_sides_argued"]:
             sq["both_sides_argued"] = True
             needs_update = True
+        # argument_sketch_complete: CA claim locked + at least 2 topic sentences locked
+        topic_sentences_locked = len([p for p in updated_bp.get("paragraphs", []) if p.get("topic_sentence")])
+        if topic_sentences_locked >= 2 and not sq.get("argument_sketch_complete"):
+            sq["argument_sketch_complete"] = True
+            needs_update = True
             
     if patch_data.get("thesis") and patch_data["thesis"] != old_thesis and old_thesis is not None:
         if not sq["thesis_refined"]:

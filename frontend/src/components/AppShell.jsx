@@ -83,7 +83,7 @@ export default function AppShell({ onStartTest }) {
       .then(data => {
         const sessions = data.sessions || [];
         setStreak(computeStreak(sessions));
-        setBlueprintCount(sessions.filter(s => s.blueprint?.final_score).length);
+        setBlueprintCount(sessions.length);
       })
       .catch(() => {});
   }, []);
@@ -171,18 +171,20 @@ export default function AppShell({ onStartTest }) {
           </div>
         )}
 
-        {showDetailPanel ? (
-          <QuestionDetail
-            item={selectedQuestion}
-            mode={mode}
-            onBack={handleBack}
-            onStartTest={handleStartTestInner}
-            onStartLearn={handleStartLearn}
-            onSelectRelated={handleSelectQuestion}
-          />
-        ) : (
-          <Outlet context={{ mode, onSelectQuestion: handleSelectQuestion }} />
-        )}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {showDetailPanel ? (
+            <QuestionDetail
+              item={selectedQuestion}
+              mode={mode}
+              onBack={handleBack}
+              onStartTest={handleStartTestInner}
+              onStartLearn={handleStartLearn}
+              onSelectRelated={handleSelectQuestion}
+            />
+          ) : (
+            <Outlet context={{ mode, onSelectQuestion: handleSelectQuestion }} />
+          )}
+        </div>
       </main>
     </div>
   );
