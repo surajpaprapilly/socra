@@ -5,6 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ### Backend (run from `backend/`)
+Run all python scripts after activating the .venv virtual environment.
+
 ```bash
 # Start dev server
 uvicorn main:app --reload --port 8000

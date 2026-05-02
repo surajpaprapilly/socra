@@ -233,7 +233,7 @@ function AppRoutes() {
   };
 
   return (
-    <div className={`min-h-screen bg-background text-textDefault relative overflow-x-hidden font-mono ${!isShellRoute ? 'pt-16' : ''}`}>
+    <div className={`min-h-screen bg-background text-textDefault relative overflow-x-hidden font-mono ${!isShellRoute && location.pathname !== '/' ? 'pt-16' : ''}`}>
       <div className="noise-overlay"></div>
       {!isShellRoute && <NavBar />}
       <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />

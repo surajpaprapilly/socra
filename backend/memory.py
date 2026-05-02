@@ -38,6 +38,8 @@ async def get_user_memory(supabase_client, user_id: str) -> dict:
             "score_history": [],
             "session_summaries": [],
             "total_sessions": 0,
+            "student_profile_summary": None,
+            "key_growth_areas": [],
             "updated_at": datetime.utcnow().isoformat()
         }
     return res[0]
@@ -66,16 +68,18 @@ def _update_strengths_challenges(current_list: list, new_items: list, summaries:
             
     return list(persistent)
 
-async def update_user_memory(supabase_client, user_id: str, session_id: str, blueprint: dict, socra_ai=None):
+async def update_user_memory(supabase_client, user_id: str, session_id: str, blueprint: dict, socra_ai=None, is_spine_complete: bool = False):
     mem = await get_user_memory(supabase_client, user_id)
 
-    if any(s.get("session_id") == session_id for s in mem.get("session_summaries", [])):
-        return mem
+    summaries = mem.get("session_summaries", [])
+    existing_summary_idx = next((i for i, s in enumerate(summaries) if s.get("session_id") == session_id), None)
+    is_first_write = existing_summary_idx is None
 
     now_iso = datetime.utcnow().isoformat()
 
-    # 1. Update session count
-    mem["total_sessions"] += 1
+    # 1. Update session count only on first write for this session
+    if is_first_write:
+        mem["total_sessions"] += 1
     
     # 2. Update moves mastery
     demonstrated_moves = extract_demonstrated_moves(blueprint)
@@ -133,7 +137,7 @@ async def update_user_memory(supabase_client, user_id: str, session_id: str, blu
             "challenges"
         )
     
-    # 5. Score History
+    # 5. Score History — update existing entry for this session, or append
     score = blueprint.get("final_score", 0)
     question_snippet = blueprint.get("question", "")[:50] + "..." if len(blueprint.get("question", "")) > 50 else blueprint.get("question", "")
     score_entry = {
@@ -142,9 +146,15 @@ async def update_user_memory(supabase_client, user_id: str, session_id: str, blu
         "date": now_iso,
         "question_snippet": question_snippet
     }
-    mem["score_history"].append(score_entry)
-    
-    # 6. Session Summary
+    score_history = mem.get("score_history", [])
+    existing_score_idx = next((i for i, s in enumerate(score_history) if s.get("session_id") == session_id), None)
+    if existing_score_idx is None:
+        score_history.append(score_entry)
+    else:
+        score_history[existing_score_idx] = score_entry
+    mem["score_history"] = score_history
+
+    # 6. Session Summary — update existing entry for this session, or append
     summary_entry = {
         "session_id": session_id,
         "date": now_iso,
@@ -153,9 +163,22 @@ async def update_user_memory(supabase_client, user_id: str, session_id: str, blu
         "strengths": new_strengths,
         "challenges": new_challenges
     }
-    mem["session_summaries"].append(summary_entry)
+    if is_first_write:
+        summaries.append(summary_entry)
+    else:
+        summaries[existing_summary_idx] = summary_entry
+    mem["session_summaries"] = summaries
     mem["updated_at"] = now_iso
-    
+
+    # 7. Spine-completion synthesis — once per session at skeleton done
+    if is_spine_complete and socra_ai:
+        question = blueprint.get("question", "")
+        summary, growth_areas = await socra_ai.synthesize_student_profile(mem, question)
+        if summary:
+            mem["student_profile_summary"] = summary
+        if growth_areas:
+            mem["key_growth_areas"] = growth_areas
+
     # Upsert
     await db_upsert(supabase_client, "user_memory", mem)
     return mem

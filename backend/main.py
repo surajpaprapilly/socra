@@ -22,7 +22,7 @@ from plato_routes import router as plato_router
 from dependencies import get_current_user
 from fastapi import Depends
 from database import db_select, db_insert, db_update
-from memory import update_user_memory
+from memory import update_user_memory, get_user_memory
 
 app = FastAPI(title="Socra API")
 
@@ -31,6 +31,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+# Memory-specific file logger — writes to backend/memory_debug.log
+_memory_log = logging.getLogger("memory_debug")
+_memory_log.setLevel(logging.DEBUG)
+_memory_log.propagate = False  # don't double-print to terminal
+_mfh = logging.FileHandler(os.path.join(os.path.dirname(__file__), "memory_debug.log"))
+_mfh.setFormatter(logging.Formatter("%(asctime)s  %(message)s"))
+_memory_log.addHandler(_mfh)
+
 # ---------------------------------------------------------------------------
 # Developer role helper
 # Reads app_metadata (server-side only — users CANNOT set this themselves)
@@ -38,6 +46,17 @@ logger.setLevel(logging.DEBUG)
 def is_developer(user: dict) -> bool:
     """Returns True if the authenticated user has the developer role in app_metadata."""
     return user.get("app_metadata", {}).get("role") == "developer"
+
+def _build_student_context(user_memory: dict) -> str | None:
+    summary = user_memory.get("student_profile_summary")
+    if not summary:
+        return None
+    areas = user_memory.get("key_growth_areas", [])
+    lines = [f"Student prior-session profile:\n{summary}"]
+    if areas:
+        lines.append("Key growth areas to watch and address this session:")
+        lines.extend(f"- {a}" for a in areas)
+    return "\n".join(lines)
 
 app.add_middleware(
     CORSMiddleware,
@@ -107,8 +126,12 @@ async def start_session(request: StartSessionRequest, current_user: dict = Depen
             }
         )
         
+        # Fetch user memory to personalize the opening message
+        user_memory = await get_user_memory(current_user["supabase"], current_user["id"])
+        student_context = _build_student_context(user_memory)
+
         # Get initial message from AI synchronously
-        initial_ai_response = await ai_handler.get_initial_chat_response(request.question, messages)
+        initial_ai_response = await ai_handler.get_initial_chat_response(request.question, messages, student_context)
         
         # Store AI response in history
         messages.append({"role": "assistant", "content": initial_ai_response})
@@ -132,7 +155,13 @@ async def start_session(request: StartSessionRequest, current_user: dict = Depen
             f.write(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
-async def run_blueprint_extraction(session_id: str, current_user: dict):
+async def run_blueprint_extraction(session_id: str, current_user: dict, skeleton_complete: bool = False):
+    try:
+        await _run_blueprint_extraction_inner(session_id, current_user, skeleton_complete=skeleton_complete)
+    except Exception as e:
+        logger.error("run_blueprint_extraction unhandled error for session %s: %s", session_id, e, exc_info=True)
+
+async def _run_blueprint_extraction_inner(session_id: str, current_user: dict, skeleton_complete: bool = False):
     # Fetch from DB
     s_data = await db_select(current_user["supabase"], "chat_sessions", {"id": session_id})
     bp_data = await db_select(current_user["supabase"], "active_blueprints", {"session_id": session_id})
@@ -153,19 +182,23 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
     logger.info("Running blueprint extraction...")
     patch_data = await ai_handler.extract_blueprint_patch(messages, current_blueprint)
     logger.info("Extracted patch data: %s", patch_data)
-    if not patch_data:
-        logger.warning("No patch data extracted.")
-        return
-        
+
     old_thesis = current_blueprint.get("thesis")
     old_links = sum(1 for p in current_blueprint.get("paragraphs", []) if p.get("link"))
-    
-    try:
-        updated_model = await patch_blueprint(session_id, patch_data, current_user)
-        updated_bp = updated_model.model_dump()
-    except Exception as e:
-        logger.error("Failed to apply expected patch data: %s\nError: %s", patch_data, e)
-        return
+    old_argument_sketch_complete = current_blueprint.get("session_quality", {}).get("argument_sketch_complete", False)
+
+    if not patch_data:
+        # Nothing new to extract — still run flag checks against current DB state
+        # so flags like argument_sketch_complete can be set when the data is already there
+        logger.info("No new blueprint data; running flag check on current DB state.")
+        updated_bp = current_blueprint
+    else:
+        try:
+            updated_model = await patch_blueprint(session_id, patch_data, current_user)
+            updated_bp = updated_model.model_dump()
+        except Exception as e:
+            logger.error("Failed to apply expected patch data: %s\nError: %s", patch_data, e)
+            return
     
     sq = updated_bp["session_quality"]
     needs_update = False
@@ -187,7 +220,12 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
         if topic_sentences_locked >= 2 and not sq.get("argument_sketch_complete"):
             sq["argument_sketch_complete"] = True
             needs_update = True
-            
+
+    # AI declared skeleton complete — set the flag even if blueprint data hasn't caught up yet
+    if skeleton_complete and not sq.get("argument_sketch_complete"):
+        sq["argument_sketch_complete"] = True
+        needs_update = True
+
     if patch_data.get("thesis") and patch_data["thesis"] != old_thesis and old_thesis is not None:
         if not sq["thesis_refined"]:
             sq["thesis_refined"] = True
@@ -203,12 +241,33 @@ async def run_blueprint_extraction(session_id: str, current_user: dict):
         await patch_blueprint(session_id, {"session_quality": sq}, current_user)
         
     sq_final = updated_bp.get("session_quality", {})
-    if sq_final.get("question_autopsy_complete"):
-        logger.info("Phase 1+ complete — updating cross-session user memory...")
+    argument_sketch_just_completed = (
+        skeleton_complete  # authoritative AI signal
+        or (bool(sq_final.get("argument_sketch_complete")) and not old_argument_sketch_complete)
+    )
+    paragraph_deep_dive_occurred = new_links > old_links
+
+    _memory_log.info(
+        "Memory gate — session=%s  argument_sketch_just_completed=%s "
+        "(sq_final.argument_sketch_complete=%s, old_argument_sketch_complete=%s)  "
+        "paragraph_deep_dive_occurred=%s (new_links=%s, old_links=%s)",
+        session_id, argument_sketch_just_completed,
+        sq_final.get("argument_sketch_complete"), old_argument_sketch_complete,
+        paragraph_deep_dive_occurred, new_links, old_links,
+    )
+
+    if argument_sketch_just_completed or paragraph_deep_dive_occurred:
+        _memory_log.info("Memory checkpoint OPEN — skeleton_done=%s new_links=%s — calling update_user_memory", argument_sketch_just_completed, paragraph_deep_dive_occurred)
         try:
-            await update_user_memory(current_user["supabase"], current_user["id"], session_id, updated_bp, ai_handler)
+            await update_user_memory(
+                current_user["supabase"], current_user["id"], session_id, updated_bp, ai_handler,
+                is_spine_complete=argument_sketch_just_completed
+            )
+            _memory_log.info("update_user_memory DONE — session=%s user=%s", session_id, current_user["id"])
         except Exception as e:
-            logger.error("Error updating user memory: %s", e)
+            _memory_log.error("update_user_memory FAILED — session=%s: %s", session_id, e, exc_info=True)
+    else:
+        _memory_log.info("Memory gate CLOSED — no update for session=%s", session_id)
 
 @app.post("/api/session/chat")
 async def chat_session(request: ChatMessageRequest, current_user: dict = Depends(get_current_user)):
@@ -262,17 +321,43 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
         logger.warning(f"Could not use is_generating lock (column missing?): {e}")
     
     
+    async def _release_lock():
+        if not lock_acquired:
+            return
+        try:
+            def _unlock():
+                return (
+                    current_user["supabase"].table("chat_sessions")
+                    .update({"is_generating": False, "generation_lock_id": None, "generation_started_at": None})
+                    .eq("id", request.session_id)
+                    .eq("generation_lock_id", lock_id)
+                    .execute()
+                )
+            await asyncio.to_thread(_unlock)
+        except Exception as e:
+            logger.warning(f"Failed to release lock: {e}")
+
     # Re-read messages after acquiring the lock so we always build on the latest turn,
     # not on the snapshot taken before a concurrent request may have written.
-    fresh_data = await db_select(current_user["supabase"], "chat_sessions", {"id": request.session_id})
+    # NOTE: Do NOT use asyncio.gather here. Both calls share the same supabase client,
+    # and concurrent asyncio.to_thread calls on the same httpx HTTP/2 client corrupt
+    # its internal connection-pool deques (RuntimeError: deque mutated during iteration).
+    try:
+        fresh_data = await db_select(current_user["supabase"], "chat_sessions", {"id": request.session_id})
+        user_memory = await get_user_memory(current_user["supabase"], current_user["id"])
+    except Exception:
+        await _release_lock()
+        raise
+
     messages = fresh_data[0]["messages"] if fresh_data else session["messages"]
+    student_context = _build_student_context(user_memory)
 
     # If the message is empty, we are just continuing the generation (e.g. initial streaming response)
     if request.message.strip():
         messages.append({"role": "user", "content": request.message})
 
     # Create the generator for streaming
-    generator = ai_handler.stream_chat_response(session["question"], messages)
+    generator = ai_handler.stream_chat_response(session["question"], messages, student_context)
     
     async def chat_wrapper():
         full_response = ""
@@ -339,23 +424,7 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
                     {"id": request.session_id}
                 )
         finally:
-            if lock_acquired:
-                try:
-                    def _unlock_run():
-                        return (
-                            current_user["supabase"].table("chat_sessions")
-                            .update({
-                                "is_generating": False,
-                                "generation_lock_id": None,
-                                "generation_started_at": None,
-                            })
-                            .eq("id", request.session_id)
-                            .eq("generation_lock_id", lock_id)
-                            .execute()
-                        )
-                    await asyncio.to_thread(_unlock_run)
-                except Exception as e:
-                    logger.warning(f"Failed to release lock: {e}")
+            await _release_lock()
             
             if new_insights_unlocked or new_strengths or new_challenges or latest_score is not None:
                 try:
@@ -398,7 +467,8 @@ async def chat_session(request: ChatMessageRequest, current_user: dict = Depends
                     print(f"Failed to update metadata tracking: {e}")
 
             # Run extraction in the background
-            asyncio.create_task(run_blueprint_extraction(request.session_id, current_user))
+            skeleton_just_completed = bool(captured_metadata and captured_metadata.get("skeleton_complete"))
+            asyncio.create_task(run_blueprint_extraction(request.session_id, current_user, skeleton_complete=skeleton_just_completed))
 
     return StreamingResponse(
         chat_wrapper(),

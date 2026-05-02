@@ -182,3 +182,5 @@ class UserMemory(BaseModel):
     score_history: List[Dict[str, Any]] = []
     session_summaries: List[Dict[str, Any]] = []
     total_sessions: int = 0
+    student_profile_summary: Optional[str] = None
+    key_growth_areas: List[str] = []
