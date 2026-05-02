@@ -40,6 +40,8 @@ async def get_user_memory(supabase_client, user_id: str) -> dict:
             "total_sessions": 0,
             "student_profile_summary": None,
             "key_growth_areas": [],
+            "plato_observation": None,
+            "plato_observation_session_count": -1,
             "updated_at": datetime.utcnow().isoformat()
         }
     return res[0]

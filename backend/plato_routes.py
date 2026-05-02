@@ -62,8 +62,28 @@ async def get_session_reflection(session_id: str, current_user: dict = Depends(g
 
 @router.get("/observation")
 async def get_profile_observation(current_user: dict = Depends(get_current_user)):
+    from database import db_upsert
     user_memory = await get_user_memory(current_user["supabase"], current_user["id"])
+
+    current_session_count = len(user_memory.get("score_history", []))
+
+    if current_session_count == 0:
+        return {"message": "Complete at least one essay plan (through all topic sentences) to receive personalised feedback on your thinking."}
+
+    cached_observation = user_memory.get("plato_observation")
+    cached_at_count = user_memory.get("plato_observation_session_count", -1)
+
+    if cached_observation and cached_at_count == current_session_count:
+        return {"message": cached_observation}
+
     observation = await plato_handler.generate_profile_observation(user_memory)
+
+    await db_upsert(current_user["supabase"], "user_memory", {
+        "user_id": current_user["id"],
+        "plato_observation": observation,
+        "plato_observation_session_count": current_session_count,
+    })
+
     return {"message": observation}
 
 @router.get("/memory")

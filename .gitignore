@@ -18,5 +18,6 @@ backend/error_log.txt
 frontend/test-results/mobile-chat-mobile-tab-bar-6ae54-ws-blueprint-and-hides-chat-iPhone-14/trace.zip
 frontend/test-results/mobile-chat-mobile-tab-bar-tablist-is-visible-on-mobile-iPhone-14/trace.zip
 frontend/test-results/mobile-chat-mobile-tab-bar-b934f-t-blueprint-panel-is-hidden-iPhone-14/trace.zip
-frontend/HANDOFF_LandingPage.md
 implementation.md
+
+frontend/HANDOFF_LandingPage.md

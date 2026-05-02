@@ -71,18 +71,19 @@ export default function Sidebar({
         {/* Streak */}
         <div className="w-full py-2.5 flex flex-col items-center gap-0.5 border-b border-borderDark">
           <span className="text-sm leading-none">🔥</span>
-          <span className="font-mono text-[9px] text-amber font-medium">{streak}</span>
+          <span className="font-mono text-[11px] text-amber font-medium">{streak}</span>
         </div>
 
         {/* Mode icons */}
         <div className="border-b border-borderDark">
           <RailBtn title="Test Mode" active={mode === 'test'} onClick={() => setMode('test')}>
             <span className="text-sm leading-none">◆</span>
-            <span className="font-mono text-[7px] tracking-wider uppercase">Test</span>
+            <span className="font-mono text-[9px] tracking-wider uppercase">Test</span>
           </RailBtn>
-          <RailBtn title="Learn Mode" active={mode === 'learn'} onClick={() => setMode('learn')}>
+          <RailBtn title="Learn Mode (Beta)" active={mode === 'learn'} onClick={() => setMode('learn')}>
             <span className="text-sm leading-none">◈</span>
-            <span className="font-mono text-[7px] tracking-wider uppercase">Learn</span>
+            <span className="font-mono text-[9px] tracking-wider uppercase">Learn</span>
+            <span className="font-mono text-[7px] text-amber/50 leading-none -mt-0.5">β</span>
           </RailBtn>
         </div>
 
@@ -93,7 +94,7 @@ export default function Sidebar({
           onClick={() => { onSelectQuestion(TODAY_Q); onToggleCollapse(); }}
         >
           <span className="text-sm leading-none">✦</span>
-          <span className="font-mono text-[7px] tracking-wider uppercase">Today</span>
+          <span className="font-mono text-[9px] tracking-wider uppercase">Today</span>
         </RailBtn>
 
         {/* Custom Q shortcut */}
@@ -102,7 +103,7 @@ export default function Sidebar({
           onClick={() => { onToggleCollapse(); setTimeout(() => customRef.current?.focus(), 320); }}
         >
           <span className="text-sm leading-none">✎</span>
-          <span className="font-mono text-[7px] tracking-wider uppercase">Own Q</span>
+          <span className="font-mono text-[9px] tracking-wider uppercase">Own Q</span>
         </RailBtn>
 
         <div className="flex-1" />
@@ -110,13 +111,13 @@ export default function Sidebar({
         {/* Blueprints */}
         <RailBtn title="My Blueprints" onClick={() => navigate('/bank')}>
           <span className="text-sm leading-none">◧</span>
-          <span className="font-mono text-[7px] tracking-wider uppercase">Bank</span>
+          <span className="font-mono text-[9px] tracking-wider uppercase">Bank</span>
         </RailBtn>
 
         {/* Profile */}
         <RailBtn title="Profile" onClick={() => navigate('/profile')}>
           <span className="text-sm leading-none">◒</span>
-          <span className="font-mono text-[7px] tracking-wider uppercase">Me</span>
+          <span className="font-mono text-[9px] tracking-wider uppercase">Me</span>
         </RailBtn>
       </div>
     );
@@ -130,10 +131,10 @@ export default function Sidebar({
       <div className="px-4 py-3.5 border-b border-borderDark flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
           <span className="font-display text-lg text-textDefault tracking-wide">Socra</span>
-          <div className="flex items-center gap-1 font-mono text-[10px] text-amber">
+          <div className="flex items-center gap-1 font-mono text-[12px] text-amber">
             <span className="text-xs">🔥</span>
             <span className="font-medium">{streak}</span>
-            <span className="text-textMuted/40 text-[8px]">days</span>
+            <span className="text-textMuted/40 text-[10px]">days</span>
           </div>
         </div>
         <button
@@ -152,13 +153,20 @@ export default function Sidebar({
             <button
               key={m}
               onClick={() => setMode(m)}
-              className={`flex-1 py-1.5 font-mono text-[10px] tracking-widest uppercase transition-all ${
+              className={`flex-1 py-1.5 font-mono text-[12px] tracking-widest uppercase transition-all ${
                 mode === m
                   ? 'bg-amber text-background font-medium'
                   : 'text-textMuted hover:text-textDefault'
               }`}
             >
-              {label}
+              {m === 'learn' ? (
+                <span className="flex items-center gap-1 justify-center">
+                  ◈ Learn
+                  <span className="text-[8px] border border-current px-0.5 opacity-60 leading-none">β</span>
+                </span>
+              ) : (
+                label
+              )}
             </button>
           ))}
         </div>
@@ -167,7 +175,7 @@ export default function Sidebar({
       {/* Custom question input */}
       <div className="px-3.5 py-2.5 border-b border-borderDark flex-shrink-0">
         <div
-          className={`font-mono text-[8px] tracking-[0.22em] uppercase mb-1.5 flex items-center gap-1.5 transition-colors ${
+          className={`font-mono text-[10px] tracking-[0.22em] uppercase mb-1.5 flex items-center gap-1.5 transition-colors ${
             customFocused ? 'text-amber' : 'text-textMuted/40'
           }`}
         >
@@ -188,7 +196,7 @@ export default function Sidebar({
             }}
             placeholder="Type any GP question…"
             rows={customFocused || customQ ? 3 : 1}
-            className={`w-full resize-none bg-background font-serif italic text-[11px] text-textDefault placeholder-textMuted/30 p-2 outline-none border transition-all duration-200 leading-relaxed ${
+            className={`w-full resize-none bg-background font-serif italic text-[12px] text-textDefault placeholder-textMuted/30 p-2 outline-none border transition-all duration-200 leading-relaxed ${
               customFocused
                 ? 'border-amber/40 bg-amber/[0.03]'
                 : 'border-borderDark'
@@ -196,13 +204,13 @@ export default function Sidebar({
           />
           {(customFocused || customQ.length > 0) && (
             <div className="flex items-center justify-between mt-1.5 animate-in fade-in duration-200">
-              <span className="font-mono text-[8px] text-textMuted/30">
+              <span className="font-mono text-[10px] text-textMuted/30">
                 {customQ.length > 0 && customQ.trim().length < 5 ? 'Too short' : ''}
               </span>
               <button
                 type="submit"
                 disabled={customQ.trim().length < 5}
-                className={`font-mono text-[8px] tracking-widest uppercase px-2.5 py-1 border transition-all ${
+                className={`font-mono text-[10px] tracking-widest uppercase px-2.5 py-1 border transition-all ${
                   customQ.trim().length >= 5
                     ? 'bg-amber text-background border-amber cursor-pointer'
                     : 'text-textMuted/25 border-borderDark cursor-default'
@@ -217,7 +225,7 @@ export default function Sidebar({
 
       {/* Today's Question pinned card */}
       <div className="px-3.5 py-2.5 border-b border-borderDark flex-shrink-0">
-        <div className="font-mono text-[8px] tracking-[0.22em] uppercase text-amber/75 mb-1.5 flex items-center gap-1">
+        <div className="font-mono text-[10px] tracking-[0.22em] uppercase text-amber/75 mb-1.5 flex items-center gap-1">
           <span>✦</span> Today's Question
         </div>
         <button
@@ -228,10 +236,10 @@ export default function Sidebar({
               : 'border-borderDark bg-[#141210] hover:border-amber/20'
           }`}
         >
-          <p className="font-serif italic text-[11px] text-textDefault leading-snug mb-1.5 line-clamp-2">
+          <p className="font-serif italic text-[12px] text-textDefault leading-snug mb-1.5 line-clamp-2">
             {TODAY_Q.q}
           </p>
-          <span className="font-mono text-[8px] text-textMuted/40">{TODAY_Q.year} A-Level GP</span>
+          <span className="font-mono text-[10px] text-textMuted/40">{TODAY_Q.year} A-Level GP</span>
         </button>
       </div>
 
@@ -244,7 +252,7 @@ export default function Sidebar({
               onClick={() => toggleYear(year)}
               className="w-full flex items-center justify-between px-3.5 py-1.5 hover:bg-white/[0.01] transition-colors"
             >
-              <span className="font-mono text-[8px] tracking-[0.2em] uppercase text-textMuted/50">
+              <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-textMuted/50">
                 {year} A-Level GP
               </span>
               <span
@@ -263,7 +271,7 @@ export default function Sidebar({
                   <button
                     key={i}
                     onClick={() => onSelectQuestion({ q, year })}
-                    className={`w-full text-left py-2.5 pr-3.5 border-l-2 border-b border-b-borderDark/30 transition-all duration-100 font-mono text-[10px] leading-relaxed ${
+                    className={`w-full text-left py-2.5 pr-3.5 border-l-2 border-b border-b-borderDark/30 transition-all duration-100 font-mono text-[11px] leading-relaxed ${
                       isSelected
                         ? 'border-l-amber bg-amber/[0.06] text-textDefault'
                         : 'border-l-transparent text-textMuted hover:bg-white/[0.015] hover:border-l-amber/25'
@@ -287,13 +295,13 @@ export default function Sidebar({
             className="group flex flex-col px-3.5 py-3 border-r border-borderDark hover:bg-amber/[0.06] transition-all"
           >
             <div className="font-display text-base text-amber font-bold leading-tight">{blueprintCount}</div>
-            <div className="font-mono text-[8px] uppercase tracking-wider text-textMuted group-hover:text-amber transition-colors flex items-center gap-1">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-textMuted group-hover:text-amber transition-colors flex items-center gap-1">
               Blueprints <span className="opacity-60 group-hover:opacity-100 transition-opacity">›</span>
             </div>
           </button>
           <div className="flex flex-col px-3.5 py-3">
             <div className="font-display text-base text-textDefault/60 font-bold leading-tight">4</div>
-            <div className="font-mono text-[8px] uppercase tracking-wider text-textMuted/40">This week</div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-textMuted/40">This week</div>
           </div>
         </div>
 
@@ -301,14 +309,14 @@ export default function Sidebar({
         <div className="flex">
           <button
             onClick={() => navigate('/profile')}
-            className="flex-1 flex items-center gap-2 px-3.5 py-3 font-mono text-[8px] uppercase tracking-widest text-textMuted hover:text-amber hover:bg-amber/[0.05] transition-all border-r border-borderDark"
+            className="flex-1 flex items-center gap-2 px-3.5 py-3 font-mono text-[10px] uppercase tracking-widest text-textMuted hover:text-amber hover:bg-amber/[0.05] transition-all border-r border-borderDark"
           >
             <span className="text-sm leading-none">◒</span>
             Profile
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-3.5 py-3 font-mono text-[8px] uppercase tracking-widest text-textMuted hover:text-amber hover:bg-amber/[0.05] transition-all"
+            className="flex items-center gap-2 px-3.5 py-3 font-mono text-[10px] uppercase tracking-widest text-textMuted hover:text-amber hover:bg-amber/[0.05] transition-all"
             title="Log out"
           >
             <span className="text-sm leading-none">⏻</span>

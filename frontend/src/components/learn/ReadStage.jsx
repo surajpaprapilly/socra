@@ -106,7 +106,7 @@ export default function ReadStage({ question, onComplete }) {
                             }
                         `}
                     >
-                        I've read enough. Proceed to GP Gym →
+                        I've read enough. Proceed to Test Mode →
                     </button>
                 </div>
             </div>

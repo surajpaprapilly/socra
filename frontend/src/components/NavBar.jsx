@@ -10,6 +10,7 @@ export default function NavBar() {
   const [scrolled, setScrolled] = useState(false);
 
   const isLanding = location.pathname === '/';
+  const isLogin = location.pathname === '/login';
 
   useEffect(() => {
     if (!isLanding) return;
@@ -34,7 +35,7 @@ export default function NavBar() {
   return (
     <nav className={`${baseClasses} ${navBg}`}>
       <div className="flex items-center gap-4">
-        <Link to={user ? "/app" : "/"} className="font-display text-2xl text-textDefault tracking-widest uppercase hover:text-amber transition-colors">
+        <Link to="/" className="font-display text-2xl text-textDefault tracking-widest uppercase hover:text-amber transition-colors">
           Socra
         </Link>
         {isDeveloper && (
@@ -44,38 +45,40 @@ export default function NavBar() {
         )}
       </div>
 
-      <div className="flex items-center gap-5 text-sm font-mono uppercase tracking-widest text-textMuted">
-        {user ? (
-          <>
-            <Link to="/bank" className={`hover:text-amber transition-colors ${location.pathname.startsWith('/bank') ? 'text-amber' : ''}`}>
-              [ ◉ My Blueprints ]
-            </Link>
-            <Link to="/profile" className={`hover:text-amber transition-colors ml-4 ${location.pathname.startsWith('/profile') ? 'text-amber' : ''}`}>
-              [ ◒ Profile ]
-            </Link>
-            <button onClick={handleLogout} className="hover:text-amber transition-colors ml-4 text-xs opacity-60">
-              [ ⏻ Logout ]
-            </button>
-          </>
-        ) : (
-          <>
-            {isLanding && (
-              <a href="#how" className="text-xs hover:text-textDefault transition-colors hidden sm:block">
-                How it works
-              </a>
-            )}
-            <Link to="/login" className="text-xs hover:text-textDefault transition-colors">
-              Sign in
-            </Link>
-            <Link
-              to="/login"
-              className="px-5 py-2 bg-amber text-background font-mono text-xs uppercase tracking-widest hover:bg-[#D4A84A] transition-colors"
-            >
-              Get started
-            </Link>
-          </>
-        )}
-      </div>
+      {!isLogin && (
+        <div className="flex items-center gap-5 text-sm font-mono uppercase tracking-widest text-textMuted">
+          {user && !isLanding ? (
+            <>
+              <Link to="/bank" className={`hover:text-amber transition-colors ${location.pathname.startsWith('/bank') ? 'text-amber' : ''}`}>
+                [ ◉ My Blueprints ]
+              </Link>
+              <Link to="/profile" className={`hover:text-amber transition-colors ml-4 ${location.pathname.startsWith('/profile') ? 'text-amber' : ''}`}>
+                [ ◒ Profile ]
+              </Link>
+              <button onClick={handleLogout} className="hover:text-amber transition-colors ml-4 text-xs opacity-60">
+                [ ⏻ Logout ]
+              </button>
+            </>
+          ) : (
+            <>
+              {isLanding && (
+                <a href="#how" className="text-xs hover:text-textDefault transition-colors hidden sm:block">
+                  How it works
+                </a>
+              )}
+              <Link to="/login" className="text-xs hover:text-textDefault transition-colors">
+                Sign in
+              </Link>
+              <Link
+                to="/login"
+                className="px-5 py-2 bg-amber text-background font-mono text-xs uppercase tracking-widest hover:bg-[#D4A84A] transition-colors"
+              >
+                Get started
+              </Link>
+            </>
+          )}
+        </div>
+      )}
     </nav>
   );
 }

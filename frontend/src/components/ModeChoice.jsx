@@ -24,16 +24,16 @@ export default function ModeChoice() {
         return null;
     }
 
+    const isCustom = source === 'custom_question';
+
     const handleLearnMode = () => {
-        const questionToPass = source === 'statement' ? statement : customQuestion;
+        const questionToPass = isCustom ? customQuestion : statement;
         navigate('/learn', { state: { question: questionToPass } });
     };
 
     const handleTestMode = () => {
-        const questionToPass = source === 'statement' ? statement : customQuestion;
-        // The App wrapper intercepts this for initializing the session 
-        // We'll pass it to a new route that App.jsx handles, or assume App.jsx logic
-        navigate('/test/init', { state: { question: questionToPass } });
+        const questionToPass = isCustom ? customQuestion : statement;
+        navigate('/test/init', { state: { question: questionToPass, isCustom } });
     };
 
     let introText = "";

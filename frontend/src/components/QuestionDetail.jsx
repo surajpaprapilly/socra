@@ -93,7 +93,7 @@ export default function QuestionDetail({
               <span className="animate-pulse">◆</span> Initialising…
             </>
           ) : mode === 'test' ? (
-            <>◆ Start arguing →</>
+            <>◆ Start forming your essay →</>
           ) : (
             <>◈ Study this question →</>
           )}

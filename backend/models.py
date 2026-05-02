@@ -10,6 +10,7 @@ class ChatMessageBase(BaseModel):
 class StartSessionRequest(BaseModel):
     question: str
     reaction: Optional[str] = None
+    validate: bool = False
 
 class StartSessionResponse(BaseModel):
     session_id: str

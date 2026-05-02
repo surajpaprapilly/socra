@@ -224,7 +224,7 @@ export default function ConflictReading() {
                             }
                         `}
                     >
-                        I've read enough — proceed to GP Gym →
+                        I've read enough — proceed to Test Mode →
                     </button>
                 </div>
                 

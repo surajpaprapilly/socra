@@ -50,7 +50,7 @@ function TestModeInit({ onStartTest }) {
             } catch (e) {
                 console.error(e);
             }
-            onStartTest(location.state.question, reaction);
+            onStartTest(location.state.question, reaction, location.state.isCustom ?? false);
         };
         checkExisting();
     }, [location, reaction, onStartTest, navigate]);
@@ -69,7 +69,7 @@ function TestModeInit({ onStartTest }) {
                         Continue Attempt {existingSessions.length} →
                     </button>
                     <button
-                        onClick={() => onStartTest(location.state.question, reaction)}
+                        onClick={() => onStartTest(location.state.question, reaction, location.state.isCustom ?? false)}
                         className="px-6 py-3 bg-transparent border border-borderDark text-textMuted font-mono tracking-widest uppercase text-xs hover:text-textDefault hover:border-borderDark transition-all"
                     >
                         Start Fresh
@@ -154,9 +154,9 @@ function AppRoutes() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [devResetting, setDevResetting] = useState(false);
 
-  const handleStartTest = async (question, reaction = null) => {
+  const handleStartTest = async (question, reaction = null, isCustom = false) => {
     try {
-      const payload = { question };
+      const payload = { question, validate: isCustom };
       if (reaction) payload.reaction = reaction;
 
       const response = await fetchWithTimeout(`${BASE_URL}/api/session/start`, {
@@ -168,6 +168,12 @@ function AppRoutes() {
       if (!response.ok) {
         if (response.status === 402) {
             setShowPremiumModal(true);
+            return;
+        }
+        if (response.status === 422) {
+            const err = await response.json();
+            showToast(err.detail || "That doesn't look like a GP Paper 1 question. Please try a different question.", 'error');
+            navigate(-1);
             return;
         }
         throw new Error("Failed to start session");

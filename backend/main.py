@@ -95,6 +95,14 @@ async def start_session(request: StartSessionRequest, current_user: dict = Depen
                 detail="You have reached the free blueprint limit. Upgrade to Premium."
             )
 
+        if request.validate:
+            is_valid, reason = await ai_handler.validate_gp_question(request.question)
+            if not is_valid:
+                raise HTTPException(
+                    status_code=422,
+                    detail=reason or "That doesn't look like a GP Paper 1 essay question. Please enter a discursive question about a real-world issue."
+                )
+
         session_id = str(uuid.uuid4())
         
         # Store initial state 

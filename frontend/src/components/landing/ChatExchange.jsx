@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TypedText from './TypedText';
 
 const EXCHANGE = [
@@ -32,13 +32,27 @@ const EXCHANGE = [
   },
 ];
 
-const PHASES = ['Question Autopsy', 'Thesis Formation', 'Argument Sketching', 'Topic Sentence Formation', 'Deep Dives', 'Download Essay Plan'];
+const PHASES = [
+  { label: 'Question Autopsy', short: 'Question Autopsy' },
+  { label: 'Thesis Formation', short: 'Thesis Formation' },
+  { label: 'Argument Sketching', short: 'Argument Sketching' },
+  { label: 'Topic Sentences', short: 'Topic Sentences' },
+  { label: 'Deep Dives', short: 'Deep Dives' },
+  { label: 'Essay Plan', short: 'Essay Plan' },
+];
 const CHAR_DELAY = 22;
 
 export default function ChatExchange() {
   const [loopKey, setLoopKey] = useState(0);
   const [typingIdx, setTypingIdx] = useState(0);
   const [visibleCount, setVisibleCount] = useState(0);
+  const messagesRef = useRef(null);
+
+  useEffect(() => {
+    if (messagesRef.current) {
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    }
+  }, [visibleCount, typingIdx]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,23 +91,37 @@ export default function ChatExchange() {
       </div>
 
       {/* Phase strip */}
-      <div className="flex border-b border-borderDark">
-        {PHASES.map((phase, i) => (
-          <div
-            key={phase}
-            className={`flex-1 text-center py-2 text-[10px] font-mono uppercase tracking-widest border-r last:border-r-0 border-borderDark/60 ${
-              i === 0
-                ? 'text-amber bg-amber/5'
-                : 'text-textMuted/40'
-            }`}
-          >
-            {phase}
-          </div>
-        ))}
+      <div className="border-b border-borderDark px-3 pt-2.5 pb-2 overflow-x-auto">
+        <div className="flex items-start min-w-max">
+          {PHASES.map((phase, i) => (
+            <div key={phase.label} className="flex items-start shrink-0">
+              {/* Tile + short label */}
+              <div className="flex flex-col items-center gap-1">
+                <div className={`w-5 h-5 flex items-center justify-center font-mono text-[9px] border ${
+                  i === 0 ? 'border-amber text-amber bg-amber/10' : 'border-borderDark/40 text-textMuted/25'
+                }`}>
+                  {i + 1}
+                </div>
+                <span className={`font-mono text-[8px] uppercase tracking-wide whitespace-nowrap ${
+                  i === 0 ? 'text-amber/80' : 'text-textMuted/30'
+                }`}>
+                  {phase.short}
+                </span>
+              </div>
+              {/* Connector line between tiles */}
+              {i < PHASES.length - 1 && (
+                <div className={`w-3 h-px shrink-0 mt-[10px] ${i === 0 ? 'bg-amber/30' : 'bg-borderDark/30'}`} />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 px-5 py-4 space-y-4 min-h-[220px]">
+      <div
+        ref={messagesRef}
+        className="px-5 py-4 h-[288px] overflow-y-auto space-y-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]"
+      >
         {EXCHANGE.map((msg, i) => {
           const isSettled = i < visibleCount;
           const isTyping = i === typingIdx && !isSettled;

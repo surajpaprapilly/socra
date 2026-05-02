@@ -117,7 +117,7 @@ export default function AppShell({ onStartTest }) {
     setSelectedQuestion(null);
   }, []);
 
-  const showDetailPanel = selectedQuestion && !isInSession;
+  const showDetailPanel = selectedQuestion && !isInSession && location.pathname === '/app';
 
   const sidebarNode = (
     <Sidebar
