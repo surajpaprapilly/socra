@@ -48,7 +48,7 @@ npm run lint
 
 ## Architecture
 
-Socra is a Socratic tutoring app for Singapore A-Level General Paper (GP). A student submits a GP essay question and is guided through a 6-phase dialogue by SocraAI, which simultaneously builds an "Essay Blueprint" in the background.
+Socra is a Socratic tutoring app for Singapore A-Level General Paper (GP). A student submits a GP essay question and is guided through a 3-phase Socratic dialogue by SocraAI (Phase 1: Question Autopsy → Phase 2: Argument Skeleton → Phase 3: Deep Dives), which simultaneously builds an "Essay Blueprint" in the background. Phase 6 is the session-complete state.
 
 ### Backend (`backend/`)
 
@@ -64,7 +64,15 @@ FastAPI app with five route modules registered in `main.py`:
 
 **`ai.py` — `SocraAI` class**
 
-Uses `AsyncAnthropic` with prompt caching (ephemeral `cache_control`) on the system prompt. The system prompt encodes the full 6-phase Socratic framework.
+Uses `AsyncAnthropic` with prompt caching (ephemeral `cache_control`) on the system prompt. The system prompt encodes a 3-phase Socratic framework:
+- **Phase 1** — Question Autopsy & Thesis Lock (command word, loaded terms, two positions, thesis iteration)
+- **Phase 2** — Argument Sketching: skeleton-first. Locks all topic sentences + CA claim before any PEEL. When complete, emits `skeleton_complete: true` so the frontend can show the deep-dive selector.
+- **Phase 3** — Deep Dives: student-selected. Each paragraph, the counter-argument, and the conclusion can be developed independently.
+- **Phase 6** — Session complete.
+
+**Five Move Tracking Layer:** Socra silently tracks which of 5 thinking moves the student has demonstrated themselves (not just explained by Socra). Emitted cumulatively in `moves_practiced`. The five moves: 1 = Interrogating question terms, 2 = Topic sentences that directly answer the question, 3 = Analytical links to the question's claim, 4 = Engaging opposing view at its strongest, 5 = Evaluating continuously rather than only in the conclusion.
+
+**Scoring (`question_score`, 0–30):** Evaluated against CAIE A-Level GP Content Band Descriptors. Hard caps by phase: Phase 1 max 6, Phase 2 max 15, Phase 3 (early) max 24; 25–30 only after a paragraph deep dive AND conclusion deep dive are both complete.
 
 Key methods:
 - `stream_chat_response()` — streams SSE, strips `<thinking>` and `<metadata>` XML tags from visible output, then re-emits metadata as a separate structured SSE event
@@ -82,25 +90,59 @@ Key methods:
 **Per-turn metadata shape:**
 ```json
 {
-  "current_phase": 1–6,
+  "current_phase": 1, 2, 3, or 6,
   "question_score": 0–30,
   "insight_unlocked": "string or null",
+  "skeleton_complete": true | false,
   "student_strengths": ["..."],
   "challenge_patterns": ["..."],
   "moves_practiced": [1, 2, ...]
 }
 ```
+`skeleton_complete` is `true` only on the exact turn all topic sentences and the CA claim are locked — this is the frontend signal to show the deep-dive selector.
 
 **Blueprint lifecycle in `main.py`:**
-After each streaming chat turn, `run_blueprint_extraction()` runs as a background `asyncio.create_task`. It calls `extract_blueprint_patch()` then `patch_blueprint()` and updates `session_quality` flags (e.g. `question_autopsy_complete`, `both_sides_argued`, `thesis_refined`).
+After each streaming chat turn, `run_blueprint_extraction()` runs as a background `asyncio.create_task`. It calls `extract_blueprint_patch()` then `patch_blueprint()` and updates `session_quality` flags:
+- `question_autopsy_complete` — all key terms have definitions
+- `both_sides_argued` — counter-argument `their_claim` is set
+- `argument_sketch_complete` — CA claim locked + ≥2 topic sentences locked (fires when skeleton is done)
+- `thesis_refined` — thesis was updated at least once after initial set
+- `analytical_links_count` — running count of paragraphs with a `link` field set
+
+The chat endpoint also uses an optimistic `is_generating` row-lock (with a 60 s stale-lock timeout) on `chat_sessions` to prevent concurrent generation for the same session.
 
 **Auth:** Supabase JWT via `HTTPBearer` in `dependencies.py`. Developer role is checked via `app_metadata.role == "developer"` (server-side only). Non-developer users are limited to 2 active sessions (HTTP 402 triggers the premium modal).
 
 **Supabase tables:**
-- `chat_sessions` — messages (full history), turn count, question
+- `chat_sessions` — messages (full history), turn count, question, `is_generating` lock fields
 - `active_blueprints` — live blueprint JSON per session
 - `saved_blueprints` — archived blueprints (knowledge bank)
 - `cached_readings` / `cached_conflict_readings` — article cache (7-day TTL)
+- `user_memory` — cross-session student profile: moves mastery, persistent strengths, recurring challenges, score history, session summaries (managed by `memory.py`)
+
+**`memory.py` — cross-session memory:**
+`update_user_memory()` is called after each turn where Phase 1 is complete. It aggregates moves mastery (5 named moves: `problem_deconstruction`, `perspective_taking`, `nuance_positionality`, `analytical_depth`, `cogent_insight`), persistent strengths/challenges (via `merge_semantic_list`), all unlocked insights, and score history. Mastery is considered achieved at count ≥ 3. `get_user_memory()` returns a default empty profile if no record exists.
+
+**Blueprint schema (in `extract_blueprint_patch` tool):**
+```json
+{
+  "key_terms": [{"term": "...", "definition": "..."}],
+  "thesis": "...",
+  "paragraphs": [{"title": "...", "topic_sentence": "...", "point": "...", "explanation": "...", "example": "...", "link": "..."}],
+  "counter_argument": {"their_claim": "...", "its_merit": "...", "student_response": "..."},
+  "conclusion": {"synthesis": "...", "qualification": "...", "lasting_impression": "..."}
+}
+```
+
+**Session endpoints in `main.py`:**
+- `POST /api/session/start` — creates session + initial blueprint, returns first AI message
+- `POST /api/session/chat` — SSE streaming chat with optimistic lock
+- `POST /api/session/nudge` — returns 2-sentence hint
+- `GET /api/sessions` — list all user sessions with lightweight blueprint snapshots
+- `GET /api/session/:id` — full session for re-hydration (filters dummy first user message)
+- `DELETE /api/session/:id` — deletes session + blueprint
+
+**Dev-only endpoints** (403 for non-developer accounts): `GET /api/dev/evals`, `GET /api/dev/evals/:run_id`, `DELETE /api/dev/reset-sessions`.
 
 **`blueprint_routes.py` deep-merge rules:**
 - `key_terms` — upsert by `term` string
