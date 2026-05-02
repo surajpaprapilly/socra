@@ -11,6 +11,20 @@ import remarkGfm from "remark-gfm";
 import { fetchWithAuth, BASE_URL } from '../lib/supabase';
 
 
+const SpineReadyCTA = () => (
+    <div className="flex w-full my-6 pl-4 animate-fade-in">
+        <div className="border border-amber/40 bg-amber/5 p-5 flex flex-col space-y-4 max-w-lg w-full">
+            <div className="flex items-center space-x-2 border-b border-amber/20 pb-3">
+                <span className="text-amber text-xs">✦</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber/80">Spine Ready</span>
+            </div>
+            <p className="font-serif text-sm text-textDefault/70 leading-relaxed">
+                You have your position, your arguments, and the opposition's move. Click any paragraph in the Blueprint panel to develop your thinking further, or take a stab at writing your introduction.
+            </p>
+        </div>
+    </div>
+);
+
 const MessageBubble = ({ role, content }) => {
     const isAI = role === 'assistant';
     const isPlato = role === 'plato';
@@ -59,10 +73,8 @@ const MessageBubble = ({ role, content }) => {
 
 const getPhaseBanner = (phaseNum) => {
     switch (phaseNum) {
-        case 2: return "You've staked your position. Now let's stress-test it. →";
-        case 3: return "Good. Now defend it against the counterargument. →";
-        case 4: return "Now consider the hidden lens. Concede some ground. →";
-        case 5: return "Almost there. Synthesize the core tension into one stance. →";
+        case 2: return "Thesis locked. Now let's sketch your arguments. →";
+        case 3: return "Skeleton ready. Time to go deeper. →";
         default: return "Advancing inquiry...";
     }
 };
@@ -95,6 +107,9 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     const [tension, setTension] = useState(null);
     const [evidence, setEvidence] = useState([]);
 
+    const [deepDiveMode, setDeepDiveMode] = useState(() => initialTurn >= 3);
+    const [activeDeepDive, setActiveDeepDive] = useState(null);
+
     const [milestoneQueue, setMilestoneQueue] = useState([]);
     const handleMilestoneReached = useCallback((flag) => {
         setMilestoneQueue(q => [...q, flag]);
@@ -106,6 +121,7 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
     const [mobileTab, setMobileTab] = useState('chat');
 
     const messagesEndRef = useRef(null);
+    const streamingMsgIdxRef = useRef(-1);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -127,7 +143,11 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
         }, 30000);
 
         try {
-            setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+            setMessages(prev => {
+                const next = [...prev, { role: 'assistant', content: '' }];
+                streamingMsgIdxRef.current = next.length - 1;
+                return next;
+            });
 
             const response = await fetchWithAuth(`${BASE_URL}/api/session/chat`, {
                 method: 'POST',
@@ -177,12 +197,15 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                     if (meta.current_phase) {
                                         if (meta.current_phase > phase && meta.current_phase <= 5) {
                                             setPhase(meta.current_phase);
-                                            setMessages(prev => [...prev, { role: 'system_banner', content: getPhaseBanner(meta.current_phase) }]);
+                                            // Phase 3 transition is handled by the SpineReadyCTA card below
+                                            if (meta.current_phase !== 3) {
+                                                setMessages(prev => [...prev, { role: 'system_banner', content: getPhaseBanner(meta.current_phase) }]);
+                                            }
                                             if (meta.current_phase === 2) {
                                                 setMilestoneQueue(q => [...q, 'question_autopsy_complete']);
                                             }
                                         }
-                                        if (meta.current_phase > 5 && !isFinished) {
+                                        if (meta.current_phase >= 6 && !isFinished) {
                                             setIsFinished(true);
                                             setTimeout(async () => {
                                                 try {
@@ -200,6 +223,11 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                     }
                                     if (meta.question_score !== undefined) {
                                         setScore(meta.question_score);
+                                    }
+                                    if (meta.skeleton_complete === true && !deepDiveMode) {
+                                        setMilestoneQueue(q => [...q, 'argument_sketch_complete']);
+                                        setDeepDiveMode(true);
+                                        setMessages(prev => [...prev, { role: 'spine_ready' }]);
                                     }
                                     if (meta.insight_unlocked) {
                                         setToastMessage(meta.insight_unlocked);
@@ -229,11 +257,10 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                 currentTurnOutput += textChunk;
                                 setMessages(prev => {
                                     const updated = [...prev];
-                                    const lastIdx = updated.length - 1;
-                                    updated[lastIdx] = {
-                                        ...updated[lastIdx],
-                                        content: currentTurnOutput
-                                    };
+                                    const idx = streamingMsgIdxRef.current;
+                                    if (idx >= 0 && idx < updated.length) {
+                                        updated[idx] = { ...updated[idx], content: currentTurnOutput };
+                                    }
                                     return updated;
                                 });
                             } catch (e) {
@@ -241,7 +268,10 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                 currentTurnOutput += dataStr;
                                 setMessages(prev => {
                                     const updated = [...prev];
-                                    updated[updated.length - 1].content = currentTurnOutput;
+                                    const idx = streamingMsgIdxRef.current;
+                                    if (idx >= 0 && idx < updated.length) {
+                                        updated[idx] = { ...updated[idx], content: currentTurnOutput };
+                                    }
                                     return updated;
                                 });
                             }
@@ -282,6 +312,21 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
         setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
 
         await handleStream(userMsg);
+    };
+
+    const handleDraftIntro = () => {
+        if (isStreaming) return;
+        const msg = "I'd like to take a stab at writing my introduction now.";
+        setMessages(prev => [...prev, { role: 'user', content: msg }]);
+        handleStream(msg);
+    };
+
+    const handleDeepDiveSelect = async (key, message) => {
+        if (isStreaming) return;
+        setActiveDeepDive(key);
+        setMessages(prev => [...prev, { role: 'user', content: message }]);
+        await handleStream(message);
+        setActiveDeepDive(null);
     };
 
     useEffect(() => {
@@ -377,14 +422,18 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                     {messages.map((msg, idx) => {
                         if (msg.role === 'system_banner') {
                             return (
-                                <div key={idx} className="flex justify-center w-full my-8 animate-slide-in">
-                                    <div className="py-2 px-6 border border-borderDark/50 bg-background/80 flex items-center space-x-3">
-                                        <span className="text-amber/70 font-display italic">Phase Transition</span>
-                                        <span className="w-4 h-[1px] bg-borderDark"></span>
-                                        <span className="font-mono text-xs uppercase tracking-widest text-textMuted/80">{msg.content}</span>
+                                <div key={idx} className="flex w-full mb-10 pl-4">
+                                    <div className="mr-4 mt-1 flex-shrink-0">
+                                        <span className="text-amber text-xs">◆</span>
+                                    </div>
+                                    <div className="prose prose-invert max-w-none font-serif text-lg">
+                                        {msg.content}
                                     </div>
                                 </div>
                             );
+                        }
+                        if (msg.role === 'spine_ready') {
+                            return <SpineReadyCTA key={idx} />;
                         }
                         return <MessageBubble key={idx} role={msg.role} content={msg.content} />;
                     })}
@@ -451,6 +500,9 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                     sessionId={sessionId}
                     initialQuestion={initialQuestion}
                     onMilestoneReached={handleMilestoneReached}
+                    deepDiveMode={deepDiveMode}
+                    activeDeepDive={activeDeepDive}
+                    onDeepDiveSelect={handleDeepDiveSelect}
                 />
             </div>
 

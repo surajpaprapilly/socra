@@ -2,13 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { fetchWithTimeout } from '../../lib/supabase';
 import { BASE_URL } from '../../lib/supabase';
 import ActivityMap from './ActivityMap';
-import ThinkingProfile from './ThinkingProfile';
 import BlueprintCard from './BlueprintCard';
 import { getConflictInfoFromQuestion } from './ProfileThemeMatcher';
 
 export default function ProfileScreen() {
     const [sessions, setSessions] = useState([]);
-    const [userMemory, setUserMemory] = useState(null);
     const [platoObservation, setPlatoObservation] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -16,9 +14,8 @@ export default function ProfileScreen() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const [sessRes, memRes, obsRes] = await Promise.all([
+                const [sessRes, obsRes] = await Promise.all([
                     fetchWithTimeout(`${BASE_URL}/api/sessions`),
-                    fetchWithTimeout(`${BASE_URL}/api/memory`),
                     fetchWithTimeout(`${BASE_URL}/api/plato/observation`)
                 ]);
 
@@ -29,10 +26,6 @@ export default function ProfileScreen() {
                 const sessData = await sessRes.json();
                 setSessions(sessData.sessions || []);
 
-                if (memRes.ok) {
-                    const data = await memRes.json();
-                    setUserMemory(data);
-                }
                 if (obsRes.ok) {
                     const data = await obsRes.json();
                     setPlatoObservation(data.message);
@@ -167,10 +160,6 @@ export default function ProfileScreen() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
 
                     <div className="lg:col-span-8 flex flex-col space-y-12">
-                        <section>
-                            <ThinkingProfile sessions={sessions} userMemory={userMemory} />
-                        </section>
-
                         <section>
                             <h3 className="text-xs font-mono uppercase tracking-widest text-textMuted mb-6 pb-2 border-b border-borderDark/40 flex justify-between items-end">
                                 Recent Blueprints

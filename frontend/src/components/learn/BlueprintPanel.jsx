@@ -51,6 +51,14 @@ const mergeBlueprintState = (prev, incoming) => {
         merged.unlocked_insights = incoming.unlocked_insights;
     }
     
+    // Conclusion
+    if (incoming.conclusion) {
+        merged.conclusion = {
+            ...(merged.conclusion || {}),
+            ...Object.fromEntries(Object.entries(incoming.conclusion).filter(([_, v]) => v !== null))
+        };
+    }
+
     // Scalars
     if (incoming.thesis !== null && incoming.thesis !== undefined) merged.thesis = incoming.thesis;
     if (incoming.checklist) merged.checklist = incoming.checklist;
@@ -62,7 +70,14 @@ const mergeBlueprintState = (prev, incoming) => {
     return merged;
 };
 
-export default function BlueprintPanel({ sessionId, initialQuestion, onMilestoneReached }) {
+export default function BlueprintPanel({
+    sessionId,
+    initialQuestion,
+    onMilestoneReached,
+    deepDiveMode = false,
+    activeDeepDive = null,
+    onDeepDiveSelect = null,
+}) {
     const [blueprint, setBlueprint] = useState(null);
     const [isPolling, setIsPolling] = useState(true);
     const [exportError, setExportError] = useState(false);
@@ -105,7 +120,7 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
                     if (data.session_quality) {
                         const sq = data.session_quality;
 
-                        // Stop polling when fully complete
+                        // Stop polling when fully complete (all deep dives done)
                         if (sq.question_autopsy_complete && sq.both_sides_argued && sq.thesis_refined && sq.analytical_links_count >= 3) {
                             setIsPolling(false);
                         }
@@ -115,11 +130,10 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
                         // for flags that were already true (e.g. on session resume).
                         const prev = previousSqRef.current;
                         if (prev === null) {
-                            // First poll: snapshot state without firing — prevents re-firing on resume
                             previousSqRef.current = { ...sq };
                         } else if (onMilestoneReached) {
-                            // question_autopsy_complete fires from the Socra phase 1→2
-                            // transition in ChatInterface (more authoritative than this flag).
+                            // question_autopsy_complete and argument_sketch_complete fire from
+                            // ChatInterface SSE metadata (more authoritative than this flag).
                             if (!prev.both_sides_argued && sq.both_sides_argued)
                                 onMilestoneReached('both_sides_argued');
                             if (!prev.thesis_refined && sq.thesis_refined)
@@ -215,6 +229,15 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
                 ]);
             }
 
+            // Conclusion
+            if (data.conclusion) {
+                renderSection("Conclusion", [
+                    `Synthesis: ${data.conclusion.synthesis || ""}`,
+                    `Qualification: ${data.conclusion.qualification || ""}`,
+                    `Lasting Impression: ${data.conclusion.lasting_impression || ""}`
+                ]);
+            }
+
             const safeTitle = (initialQuestion || "essay").split(" ").slice(0, 4).join("-").replace(/[^a-zA-Z0-9-]/g, "").toLowerCase();
             const dateStr = new Date().toISOString().split('T')[0];
             doc.save(`socra-blueprint-${safeTitle}-${dateStr}.pdf`);
@@ -239,8 +262,10 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
     // Prepare arrays up to max length for skeletons
     const paragraphs = [...(blueprint.paragraphs || [])];
     while(paragraphs.length < 3) paragraphs.push({});
-    
+
     const sq = blueprint.session_quality || {};
+
+    const isKnown = (v) => !!v && v !== '<UNKNOWN>';
 
     return (
         <div className="flex flex-col h-full">
@@ -307,10 +332,29 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
                 {/* 4. Paragraph Skeletons */}
                 <div className="flex flex-col space-y-6">
                     <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Paragraph Skeletons</h3>
-                    {paragraphs.map((p, idx) => (
-                        <div key={idx} className="flex flex-col border border-borderDark/40 bg-background/20 overflow-hidden">
-                            <div className="bg-borderDark/20 px-4 py-2 font-mono text-xs text-textMuted uppercase tracking-wider">
-                                Argument {idx + 1} {p.title ? `- ${p.title}` : ''}
+                    {paragraphs.map((p, idx) => {
+                        const key = `para_${idx}`;
+                        const isActive = activeDeepDive === key;
+                        const isDone = isKnown(p.point) && isKnown(p.explanation) && isKnown(p.example) && isKnown(p.link);
+                        const isClickable = deepDiveMode && !isDone && !isActive && onDeepDiveSelect && !!p.topic_sentence;
+                        const message = `Let's go deeper on Paragraph ${idx + 1}: "${p.topic_sentence}"`;
+
+                        let ringClass = 'border-borderDark/40';
+                        if (isActive)                               ringClass = 'border-amber ring-2 ring-amber/60';
+                        else if (isDone)                            ringClass = 'border-green-500/40';
+                        else if (deepDiveMode && p.topic_sentence)  ringClass = 'border-amber/50 animate-pulse';
+
+                        return (
+                        <div
+                            key={idx}
+                            className={`flex flex-col border bg-background/20 overflow-hidden transition-all ${ringClass} ${isClickable ? 'cursor-pointer hover:border-amber hover:bg-amber/5' : ''}`}
+                            onClick={() => isClickable && onDeepDiveSelect(key, message)}
+                        >
+                            <div className="bg-borderDark/20 px-4 py-2 font-mono text-xs text-textMuted uppercase tracking-wider flex items-center justify-between">
+                                <span>Argument {idx + 1} {p.title ? `- ${p.title}` : ''}</span>
+                                {isActive && <span className="text-amber/80 text-[10px] tracking-widest normal-case">Exploring...</span>}
+                                {isDone && <span className="text-green-500/70 text-[10px] tracking-widest normal-case">✓ Done</span>}
+                                {isClickable && <span className="text-amber/60 text-[10px] tracking-widest normal-case">Explore →</span>}
                             </div>
                             <div className="p-4 flex flex-col space-y-4 font-mono text-sm">
                                 {/* Topic Sentence */}
@@ -340,39 +384,99 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* 5. Counter-argument */}
-                <div className="flex flex-col space-y-4">
-                    <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Counter Argument</h3>
-                    <div className="flex flex-col border border-borderDark/40 bg-background/20 p-4 space-y-4 font-mono text-sm">
-                        <div className="pl-4 border-l-2 border-red-500/50">
-                            <span className="text-xs uppercase text-red-500/50 block mb-1">Their Claim</span>
-                            {blueprint.counter_argument?.their_claim ? <span className="text-textDefault animate-fade-in">{blueprint.counter_argument.their_claim}</span> : <div className="h-4 bg-borderDark/20 w-3/4 rounded"></div>}
-                        </div>
-                        <div className="pl-4 border-l-2 border-red-400/30">
-                            <span className="text-xs uppercase text-textMuted block mb-1">Its Merit</span>
-                            {blueprint.counter_argument?.its_merit ? <span className="text-textDefault animate-fade-in">{blueprint.counter_argument.its_merit}</span> : <div className="h-4 bg-borderDark/20 w-1/2 rounded"></div>}
-                        </div>
-                        <div className="pl-4 border-l-2 border-amber/50">
-                            <span className="text-xs uppercase text-amber/50 block mb-1">Your Response</span>
-                            {blueprint.counter_argument?.student_response ? <span className="text-textDefault animate-fade-in">{blueprint.counter_argument.student_response}</span> : <div className="h-4 bg-borderDark/20 w-full rounded"></div>}
-                        </div>
-                    </div>
-                </div>
+                {(() => {
+                    const key = 'counter';
+                    const isActive = activeDeepDive === key;
+                    const isDone = isKnown(blueprint.counter_argument?.their_claim) && isKnown(blueprint.counter_argument?.its_merit) && isKnown(blueprint.counter_argument?.student_response);
+                    const isClickable = deepDiveMode && !isDone && !isActive && onDeepDiveSelect;
+                    const message = "Let's develop the counter-argument — concede what's right and build the rebuttal.";
 
-                {/* 6. Conclusion Prompts */}
-                <div className="flex flex-col space-y-4">
-                    <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider">Conclusion Prompts</h3>
-                    <div className="grid grid-cols-1 gap-3">
-                        {blueprint.conclusion_prompts?.map((prompt, idx) => (
-                            <div key={idx} className="p-3 bg-background/30 border border-borderDark/30 text-textDefault font-serif italic text-sm">
-                                {prompt}
+                    let ringClass = 'border-borderDark/40';
+                    if (isActive)       ringClass = 'border-amber ring-2 ring-amber/60';
+                    else if (isDone)    ringClass = 'border-green-500/40';
+                    else if (deepDiveMode) ringClass = 'border-amber/50 animate-pulse';
+
+                    return (
+                    <div className="flex flex-col space-y-4">
+                        <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider flex items-center justify-between">
+                            <span>Counter Argument</span>
+                            {isActive && <span className="text-amber/80 text-[10px] normal-case">Exploring...</span>}
+                            {isDone && <span className="text-green-500/70 text-[10px] normal-case">✓ Done</span>}
+                            {isClickable && <span className="text-amber/60 text-[10px] normal-case">Explore →</span>}
+                        </h3>
+                        <div
+                            className={`flex flex-col border bg-background/20 p-4 space-y-4 font-mono text-sm transition-all ${ringClass} ${isClickable ? 'cursor-pointer hover:border-amber hover:bg-amber/5' : ''}`}
+                            onClick={() => isClickable && onDeepDiveSelect(key, message)}
+                        >
+                            <div className="pl-4 border-l-2 border-red-500/50">
+                                <span className="text-xs uppercase text-red-500/50 block mb-1">Their Claim</span>
+                                {blueprint.counter_argument?.their_claim ? <span className="text-textDefault animate-fade-in">{blueprint.counter_argument.their_claim}</span> : <div className="h-4 bg-borderDark/20 w-3/4 rounded"></div>}
                             </div>
-                        ))}
+                            <div className="pl-4 border-l-2 border-red-400/30">
+                                <span className="text-xs uppercase text-textMuted block mb-1">Its Merit</span>
+                                {blueprint.counter_argument?.its_merit ? <span className="text-textDefault animate-fade-in">{blueprint.counter_argument.its_merit}</span> : <div className="h-4 bg-borderDark/20 w-1/2 rounded"></div>}
+                            </div>
+                            <div className="pl-4 border-l-2 border-amber/50">
+                                <span className="text-xs uppercase text-amber/50 block mb-1">Your Response</span>
+                                {blueprint.counter_argument?.student_response ? <span className="text-textDefault animate-fade-in">{blueprint.counter_argument.student_response}</span> : <div className="h-4 bg-borderDark/20 w-full rounded"></div>}
+                            </div>
+                        </div>
                     </div>
-                </div>
+                    );
+                })()}
+
+                {/* 6. Conclusion */}
+                {(() => {
+                    const key = 'conclusion';
+                    const isActive = activeDeepDive === key;
+                    const isDone = isKnown(blueprint.conclusion?.synthesis) && isKnown(blueprint.conclusion?.qualification) && isKnown(blueprint.conclusion?.lasting_impression);
+                    const isClickable = deepDiveMode && !isDone && !isActive && onDeepDiveSelect;
+                    const message = "Let's build a strong conclusion — synthesis, honest qualification, and a lasting impression.";
+
+                    let ringClass = 'border-borderDark/40';
+                    if (isActive)       ringClass = 'border-amber ring-2 ring-amber/60';
+                    else if (isDone)    ringClass = 'border-green-500/40';
+                    else if (deepDiveMode) ringClass = 'border-amber/50 animate-pulse';
+
+                    return (
+                    <div className="flex flex-col space-y-4">
+                        <h3 className="font-mono text-xs uppercase text-textMuted tracking-wider flex items-center justify-between">
+                            <span>Conclusion</span>
+                            {isActive && <span className="text-amber/80 text-[10px] normal-case">Exploring...</span>}
+                            {isDone && <span className="text-green-500/70 text-[10px] normal-case">✓ Done</span>}
+                            {isClickable && <span className="text-amber/60 text-[10px] normal-case">Explore →</span>}
+                        </h3>
+                        <div
+                            className={`flex flex-col border bg-background/20 p-4 space-y-4 font-mono text-sm transition-all ${ringClass} ${isClickable ? 'cursor-pointer hover:border-amber hover:bg-amber/5' : ''}`}
+                            onClick={() => isClickable && onDeepDiveSelect(key, message)}
+                        >
+                            <div className="pl-4 border-l-2 border-amber/50">
+                                <span className="text-xs uppercase text-amber/50 block mb-1">Synthesis</span>
+                                {blueprint.conclusion?.synthesis
+                                    ? <span className="text-textDefault animate-fade-in">{blueprint.conclusion.synthesis}</span>
+                                    : <div className="h-4 bg-borderDark/20 w-full rounded animate-pulse"></div>}
+                            </div>
+                            <div className="pl-4 border-l-2 border-borderDark/40">
+                                <span className="text-xs uppercase text-textMuted block mb-1">Qualification</span>
+                                {blueprint.conclusion?.qualification
+                                    ? <span className="text-textDefault animate-fade-in">{blueprint.conclusion.qualification}</span>
+                                    : <div className="h-4 bg-borderDark/20 w-3/4 rounded"></div>}
+                            </div>
+                            <div className="pl-4 border-l-2 border-purple-500/70">
+                                <span className="text-xs uppercase text-purple-500/70 block mb-1">Lasting Impression</span>
+                                {blueprint.conclusion?.lasting_impression
+                                    ? <span className="text-textDefault animate-fade-in">{blueprint.conclusion.lasting_impression}</span>
+                                    : <div className="h-4 bg-borderDark/20 w-5/6 rounded animate-pulse"></div>}
+                            </div>
+                        </div>
+                    </div>
+                    );
+                })()}
 
                 {/* 7. Examiner Checklist */}
                 <div className="flex flex-col space-y-4">
@@ -397,6 +501,9 @@ export default function BlueprintPanel({ sessionId, initialQuestion, onMilestone
                 <div className="flex flex-wrap gap-2 pt-4 border-t border-borderDark/20">
                     <span className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest rounded ${sq.question_autopsy_complete ? 'bg-green-500/20 text-green-400' : 'bg-borderDark/20 text-textMuted'}`}>
                         Autopsy
+                    </span>
+                    <span className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest rounded ${sq.argument_sketch_complete ? 'bg-amber/20 text-amber' : 'bg-borderDark/20 text-textMuted'}`}>
+                        Skeleton
                     </span>
                     <span className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest rounded ${sq.thesis_refined ? 'bg-green-500/20 text-green-400' : 'bg-borderDark/20 text-textMuted'}`}>
                         Refined Thesis

@@ -41,6 +41,7 @@ class ChatTurnMetadata(BaseModel):
     insight_unlocked: Optional[str] = None
     student_strengths: Optional[List[str]] = None
     challenge_patterns: Optional[List[str]] = None
+    skeleton_complete: Optional[bool] = None
     lazy_example: bool
     blueprint: Optional[BlueprintMeta] = None
     tension_axis: Optional[TensionAxisMeta] = None
@@ -130,12 +131,18 @@ class CounterArgument(BaseModel):
     its_merit: Optional[str] = None
     student_response: Optional[str] = None
 
+class Conclusion(BaseModel):
+    synthesis: Optional[str] = None
+    qualification: Optional[str] = None
+    lasting_impression: Optional[str] = None
+
 class ChecklistItem(BaseModel):
     label: str
     completed: bool = False
 
 class SessionQuality(BaseModel):
     question_autopsy_complete: bool = False
+    argument_sketch_complete: bool = False
     both_sides_argued: bool = False
     thesis_refined: bool = False
     analytical_links_count: int = 0
@@ -146,6 +153,7 @@ class BlueprintModel(BaseModel):
     thesis: Optional[str] = None
     paragraphs: List[Paragraph] = []
     counter_argument: Optional[CounterArgument] = None
+    conclusion: Optional[Conclusion] = None
     unlocked_insights: List[str] = []
     student_strengths: List[str] = []
     challenge_patterns: List[str] = []
@@ -174,3 +182,5 @@ class UserMemory(BaseModel):
     score_history: List[Dict[str, Any]] = []
     session_summaries: List[Dict[str, Any]] = []
     total_sessions: int = 0
+    student_profile_summary: Optional[str] = None
+    key_growth_areas: List[str] = []

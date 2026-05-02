@@ -5,7 +5,7 @@ import json
 class PlatoAI:
     def __init__(self):
         self.client = anthropic.AsyncAnthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-        self.model = "claude-3-5-haiku-20241022"
+        self.model = "claude-haiku-4-5-20251001"
         self.system_prompt = (
             "You are Plato, a wise, observant, and warm mentor. You are the inverse of Socra. "
             "Where Socra questions relentlessly, you provide warm acknowledgment, gentle nudges, and celebrate a student's growth across time. "
@@ -14,10 +14,15 @@ class PlatoAI:
         )
 
     async def generate_greeting(self, user_memory: dict, current_question: str) -> str:
-        history_summary = ""
         total_sessions = user_memory.get("total_sessions", 0)
-        
-        if total_sessions > 0:
+        profile_summary = user_memory.get("student_profile_summary")
+
+        if profile_summary:
+            history_summary = f"The student has completed {total_sessions} session(s). Their profile: {profile_summary} "
+            growth_areas = user_memory.get("key_growth_areas", [])
+            if growth_areas:
+                history_summary += f"Key things to watch for this session: {', '.join(growth_areas[:2])}. "
+        elif total_sessions > 0:
             strengths = ", ".join(user_memory.get("persistent_strengths", [])[:2])
             challenges = ", ".join(user_memory.get("recurring_challenges", [])[:2])
             history_summary = f"The student has completed {total_sessions} sessions. "
