@@ -4,7 +4,7 @@ import uuid
 import logging
 import anthropic
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any
@@ -58,16 +58,27 @@ def _build_student_context(user_memory: dict) -> str | None:
         lines.extend(f"- {a}" for a in areas)
     return "\n".join(lines)
 
+_FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
+# Render sets RENDER=true automatically — fail fast so a misconfigured CORS list
+# doesn't silently drop prod traffic and produce confusing 403s.
+if not _FRONTEND_URL and os.environ.get("RENDER"):
+    raise RuntimeError(
+        "FRONTEND_URL env var is required on Render. "
+        "Set it to your Vercel deployment URL (e.g. https://socra.vercel.app)."
+    )
+
 _ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
-    os.environ.get("FRONTEND_URL", ""),  # e.g. https://socra.vercel.app or custom domain
 ]
+if _FRONTEND_URL:
+    _ALLOWED_ORIGINS.append(_FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o for o in _ALLOWED_ORIGINS if o],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,6 +89,15 @@ app.include_router(bank_router, prefix="/api/bank")
 app.include_router(blueprint_router, prefix="/api/blueprint")
 app.include_router(plato_router, prefix="/api/plato")
 app.include_router(feedback_router, prefix="/api/feedback")
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception on %s %s: %s", request.method, request.url.path, exc)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
 
 # Initialize AI handler
 # Will fail if ANTHROPIC_API_KEY is not set
