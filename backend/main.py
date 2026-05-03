@@ -209,7 +209,7 @@ async def _run_blueprint_extraction_inner(session_id: str, current_user: dict, s
     
     # Extract patch
     logger.info("Running blueprint extraction...")
-    patch_data = await ai_handler.extract_blueprint_patch(messages, current_blueprint)
+    patch_data = await ai_handler.extract_blueprint_patch(messages, current_blueprint, question=session.get("question", ""))
     logger.info("Extracted patch data: %s", patch_data)
 
     old_thesis = current_blueprint.get("thesis")

@@ -35,40 +35,26 @@ const STEPS = [
     visual: (
       <div className="bg-[#11100D] border border-borderDark p-5 space-y-4">
         {/* Retention diagram */}
-        <div className="space-y-2.5">
-          <div className="space-y-1">
+        <div className="space-y-4">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="font-mono text-[10px] text-textMuted/50 uppercase tracking-widest">Re-reading notes</span>
-              <span className="font-mono text-[10px] text-textMuted/40">~20% retained</span>
+              <span className="font-mono text-xs text-textMuted/80 uppercase tracking-widest">Re-reading notes</span>
+              <span className="font-mono text-xs text-textMuted/70">~20% retained</span>
             </div>
-            <div className="h-1.5 bg-borderDark rounded-sm w-full overflow-hidden">
-              <div className="h-full bg-textMuted/25 rounded-sm w-[20%]" />
+            <div className="h-2.5 bg-borderDark rounded-sm w-full overflow-hidden">
+              <div className="h-full bg-textMuted/50 rounded-sm w-[20%]" />
             </div>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="font-mono text-[10px] text-amber/70 uppercase tracking-widest">Challenged to recall</span>
-              <span className="font-mono text-[10px] text-amber/60">~65% retained</span>
+              <span className="font-mono text-xs text-amber uppercase tracking-widest">Challenged to recall</span>
+              <span className="font-mono text-xs text-amber">~65% retained</span>
             </div>
-            <div className="h-1.5 bg-borderDark rounded-sm w-full overflow-hidden">
-              <div className="h-full bg-amber/70 rounded-sm w-[65%]" />
-            </div>
-          </div>
-          <p className="font-mono text-[9px] text-textMuted/30">Roediger &amp; Karpicke, 2006 — testing effect on long-term retention</p>
-        </div>
-        {/* Single exchange */}
-        <div className="border-t border-borderDark pt-3 space-y-2">
-          <div className="flex items-start gap-2">
-            <span className="text-amber text-xs flex-shrink-0 mt-0.5">◆</span>
-            <p className="font-serif italic text-xs text-textDefault/80 leading-relaxed">
-              Your thesis says facts enable &ldquo;judgment.&rdquo; But couldn&apos;t someone build judgment just by practising analysis?
-            </p>
-          </div>
-          <div className="flex justify-end">
-            <div className="font-mono text-xs text-textMuted border border-borderDark/50 bg-background/50 px-3 py-2 max-w-[82%]">
-              You need base knowledge to know what to analyse in the first place
+            <div className="h-2.5 bg-borderDark rounded-sm w-full overflow-hidden">
+              <div className="h-full bg-amber rounded-sm w-[65%]" />
             </div>
           </div>
+          <p className="font-mono text-[11px] text-textMuted/60 pt-1">Roediger &amp; Karpicke, 2006 — testing effect on long-term retention</p>
         </div>
       </div>
     ),
@@ -183,26 +169,26 @@ const STEPS = [
     label: 'A thinking partner, not a yes-machine.',
     desc: 'Plato reviews every session, tracks which moves you\'ve mastered, and shapes the next one around your gaps. It knows your patterns — and doesn\'t let you slide.',
     visual: (
-      <div className="bg-[#11100D] border border-borderDark p-5 space-y-4">
+      <div className="bg-[#11100D] border border-borderDark p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <div className="text-[10px] font-mono text-textMuted/50 uppercase tracking-widest">Plato — session 4</div>
-          <div className="flex gap-2">
+          <div className="text-xs font-mono text-textMuted/80 uppercase tracking-widest">Plato — session 4</div>
+          <div className="flex gap-3">
             {[{ n: 1, done: true }, { n: 2, done: true }, { n: 3, done: false }, { n: 4, done: true }, { n: 5, done: false }].map(({ n, done }) => (
-              <div key={n} className="flex flex-col items-center gap-0.5">
-                <span className={`font-mono text-xs ${done ? 'text-amber' : 'text-textMuted/25'}`}>{done ? '✓' : '○'}</span>
-                <span className="font-mono text-[9px] text-textMuted/30">{n}</span>
+              <div key={n} className="flex flex-col items-center gap-1">
+                <span className={`font-mono text-sm ${done ? 'text-amber' : 'text-textMuted/40'}`}>{done ? '✓' : '○'}</span>
+                <span className="font-mono text-[10px] text-textMuted/50">{n}</span>
               </div>
             ))}
           </div>
         </div>
-        <div className="space-y-3 border-t border-borderDark pt-3">
+        <div className="space-y-4 border-t border-borderDark pt-4">
           <div>
-            <div className="text-[10px] font-mono text-textMuted/40 uppercase tracking-widest mb-1">Pattern</div>
-            <p className="font-serif italic text-xs text-textMuted leading-snug">Counter-argument conceded too quickly — genuine pushback needed.</p>
+            <div className="text-[11px] font-mono text-textMuted/70 uppercase tracking-widest mb-1.5">Pattern</div>
+            <p className="font-serif italic text-sm text-textMuted leading-snug">Counter-argument conceded too quickly — genuine pushback needed.</p>
           </div>
           <div>
-            <div className="text-[10px] font-mono text-amber/60 uppercase tracking-widest mb-1">Next session</div>
-            <p className="font-serif italic text-xs text-textDefault/80 leading-snug">Find the CA&apos;s weakest assumption before you concede any ground.</p>
+            <div className="text-[11px] font-mono text-amber uppercase tracking-widest mb-1.5">Next session</div>
+            <p className="font-serif italic text-sm text-textDefault leading-snug">Find the CA&apos;s weakest assumption before you concede any ground.</p>
           </div>
         </div>
       </div>
@@ -224,13 +210,13 @@ export default function HowItWorks() {
         {/* ChatGPT vs Socra */}
         <div ref={calloutRef} className="reveal mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 border border-borderDark overflow-hidden">
-            <div className="bg-[#11100D] p-5 border-b md:border-b-0 md:border-r border-borderDark space-y-2">
-              <div className="text-[10px] font-mono text-textMuted/40 uppercase tracking-widest">ChatGPT</div>
-              <p className="font-serif italic text-textMuted text-sm">Ask → get an answer → feel prepared.</p>
+            <div className="bg-[#11100D] p-8 border-b md:border-b-0 md:border-r border-borderDark space-y-3">
+              <div className="text-xs font-mono text-textMuted/50 uppercase tracking-widest">AI Chatbots</div>
+              <p className="font-serif italic text-textMuted text-lg leading-snug">Ask → get an answer → feel prepared.</p>
             </div>
-            <div className="bg-[#11100D] p-5 space-y-2">
-              <div className="text-[10px] font-mono text-amber/70 uppercase tracking-widest">Socra</div>
-              <p className="font-serif italic text-textDefault/90 text-sm">Claim → get challenged → actually be prepared.</p>
+            <div className="bg-[#11100D] p-8 space-y-3">
+              <div className="text-xs font-mono text-amber/80 uppercase tracking-widest">Socra</div>
+              <p className="font-serif italic text-textDefault text-lg leading-snug">Claim → get challenged → internalise train of thoughts.</p>
             </div>
           </div>
         </div>
