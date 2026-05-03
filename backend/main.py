@@ -58,14 +58,16 @@ def _build_student_context(user_memory: dict) -> str | None:
         lines.extend(f"- {a}" for a in areas)
     return "\n".join(lines)
 
+_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    os.environ.get("FRONTEND_URL", ""),  # e.g. https://socra.vercel.app or custom domain
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-    ],
+    allow_origins=[o for o in _ALLOWED_ORIGINS if o],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -159,10 +161,8 @@ async def start_session(request: StartSessionRequest, current_user: dict = Depen
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-        with open("error_log.txt", "w") as f:
-            f.write(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("start_session failed: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 async def run_blueprint_extraction(session_id: str, current_user: dict, skeleton_complete: bool = False):
     try:
