@@ -8,6 +8,7 @@ Paper 1 Examiner Comments.pdf
 # Python cache
 __pycache__/
 *.py[cod]
+*.egg-info/
 
 # macOS system files
 .DS_Store
