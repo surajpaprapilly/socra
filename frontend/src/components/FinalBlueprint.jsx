@@ -10,30 +10,34 @@ export default function FinalBlueprint({ insights, blueprint, platoReflection })
     const { customQuestion, readings, canvasData } = useSession();
     const { showToast } = useToast();
 
+    const paragraphs = blueprint?.paragraphs || [];
+    const counterArg = blueprint?.counter_argument;
+    const conclusion = blueprint?.conclusion;
+
     const handleExport = () => {
         if (!blueprint) return;
 
-        const text = `
-# My GP Essay Blueprint
+        const paraLines = paragraphs.map((p, i) =>
+            `[ARGUMENT ${i + 1}]\n${p.topic_sentence || 'Not established'}`
+        ).join('\n\n');
 
-[THESIS]
-${blueprint.thesis || 'Not established'}
-
-[ARGUMENT 1]
-${blueprint.arg1 || 'Not established'}
-
-[ARGUMENT 2]
-${blueprint.arg2 || 'Not established'}
-
-[COUNTERARGUMENT]
-${blueprint.counterarg || 'Not established'}
-
-[SYNTHESIS]
-${blueprint.synthesis || 'Not established'}
-
-[LENSES EXPLORED]
-${insights.length > 0 ? insights.join(", ") : 'None'}
-        `.trim();
+        const text = [
+            '# My GP Essay Blueprint',
+            '',
+            '[THESIS]',
+            blueprint.thesis || 'Not established',
+            '',
+            paraLines,
+            '',
+            '[COUNTERARGUMENT]',
+            counterArg?.their_claim || 'Not established',
+            '',
+            '[SYNTHESIS]',
+            conclusion?.synthesis || 'Not established',
+            '',
+            '[LENSES EXPLORED]',
+            insights.length > 0 ? insights.join(', ') : 'None',
+        ].join('\n').trim();
 
         navigator.clipboard.writeText(text);
         setCopied(true);
@@ -45,9 +49,13 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
         setIsSaving(true);
 
         try {
+            const paraSummary = paragraphs.map((p, i) =>
+                `Argument ${i + 1}: ${p.topic_sentence || 'N/A'}`
+            ).join('\n');
+
             const body = {
                 question: customQuestion || "Final Essay Plan",
-                summary: `Thesis: ${blueprint.thesis || 'N/A'}\nArgument 1: ${blueprint.arg1 || 'N/A'}\nArgument 2: ${blueprint.arg2 || 'N/A'}\nCounterargument: ${blueprint.counterarg || 'N/A'}\nSynthesis: ${blueprint.synthesis || 'N/A'}`,
+                summary: `Thesis: ${blueprint.thesis || 'N/A'}\n${paraSummary}\nCounterargument: ${counterArg?.their_claim || 'N/A'}\nSynthesis: ${conclusion?.synthesis || 'N/A'}`,
                 follow_up_response: "",
                 insight_tags: insights || [],
                 readings: readings || [],
@@ -103,16 +111,15 @@ ${insights.length > 0 ? insights.join(", ") : 'None'}
                     <div className="space-y-6 font-serif text-lg text-textDefault/90 mb-12">
                         {[
                             { label: 'THESIS', text: blueprint.thesis },
-                            { label: 'ARGUMENT 1', text: blueprint.arg1 },
-                            { label: 'ARGUMENT 2', text: blueprint.arg2 },
-                            { label: 'COUNTERARGUMENT', text: blueprint.counterarg },
-                            { label: 'SYNTHESIS', text: blueprint.synthesis }
+                            ...paragraphs.map((p, i) => ({ label: `ARGUMENT ${i + 1}`, text: p.topic_sentence })),
+                            { label: 'COUNTERARGUMENT', text: counterArg?.their_claim },
+                            { label: 'SYNTHESIS', text: conclusion?.synthesis, isFinal: true },
                         ].map((section, idx) => (
-                            <div key={idx} className={`border-l-2 pl-4 ${section.text ? (idx === 4 ? 'border-amber/50' : 'border-amber/30') : 'border-borderDark/30'}`}>
+                            <div key={idx} className={`border-l-2 pl-4 ${section.text ? (section.isFinal ? 'border-amber/50' : 'border-amber/30') : 'border-borderDark/30'}`}>
                                 <span className={`block font-mono text-[10px] uppercase tracking-widest mb-1 ${section.text ? 'text-textMuted' : 'text-textMuted/40'}`}>
                                     {section.label}
                                 </span>
-                                <p className={section.text ? (idx === 4 ? 'italic text-amber/90' : 'text-textDefault') : 'text-textMuted/40 italic text-sm'}>
+                                <p className={section.text ? (section.isFinal ? 'italic text-amber/90' : 'text-textDefault') : 'text-textMuted/40 italic text-sm'}>
                                     {section.text ? `"${section.text}"` : 'Not established during inquiry.'}
                                 </p>
                             </div>

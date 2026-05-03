@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useSession } from '../context/SessionContext';
-import { fetchWithAuth } from '../lib/supabase';
+import { fetchWithAuth, BASE_URL } from '../lib/supabase';
 import Sidebar from './Sidebar';
+import FeedbackWidget from './FeedbackWidget';
 import QuestionDetail from './QuestionDetail';
 import { PAST_YEAR_QUESTIONS } from '../data/pastYearQuestions';
 
@@ -78,7 +79,7 @@ export default function AppShell({ onStartTest }) {
 
   // Fetch streak + blueprint count once on mount
   useEffect(() => {
-    fetchWithAuth('http://localhost:8000/api/sessions')
+    fetchWithAuth(`${BASE_URL}/api/sessions`)
       .then(r => (r.ok ? r.json() : { sessions: [] }))
       .then(data => {
         const sessions = data.sessions || [];
@@ -186,6 +187,7 @@ export default function AppShell({ onStartTest }) {
           )}
         </div>
       </main>
+      <FeedbackWidget currentPage={location.pathname} />
     </div>
   );
 }

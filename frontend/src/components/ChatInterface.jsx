@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSession } from '../context/SessionContext';
 import { useToast } from '../context/ToastContext';
 import BlueprintPanel from './learn/BlueprintPanel';
-import NudgeButton from './NudgeButton';
 import FinalBlueprint from './FinalBlueprint';
 import MilestoneCard from './MilestoneCard';
 
@@ -479,11 +478,6 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                             rows={3}
                             disabled={isStreaming || isFinished}
                         />
-                        <div className="absolute top-4 right-6">
-                            <NudgeButton sessionId={sessionId} disabled={isStreaming} onNudgeReceived={(nudgeText) => {
-                                setMessages(prev => [...prev, { role: 'assistant', content: "💡 " + nudgeText }]);
-                            }} />
-                        </div>
                         <div className="absolute bottom-4 right-6 text-[10px] text-textMuted/40 uppercase tracking-widest font-mono">
                             ↵ to send
                         </div>

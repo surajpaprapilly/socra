@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { fetchWithAuth } from '../lib/supabase';
+import { fetchWithAuth, BASE_URL } from '../lib/supabase';
 
 export default function EvalList() {
     const { isDeveloper } = useAuth();
@@ -12,7 +12,7 @@ export default function EvalList() {
 
     useEffect(() => {
         if (!isDeveloper) return;
-        fetchWithAuth('http://localhost:8000/api/dev/evals')
+        fetchWithAuth(`${BASE_URL}/api/dev/evals`)
             .then(r => r.json())
             .then(data => setEvals(data.evals || []))
             .catch(e => setError(e.message))

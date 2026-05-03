@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { fetchWithAuth } from '../lib/supabase';
+import { fetchWithAuth, BASE_URL } from '../lib/supabase';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -146,7 +146,7 @@ export default function EvalViewer() {
 
     useEffect(() => {
         if (!isDeveloper) return;
-        fetchWithAuth(`http://localhost:8000/api/dev/evals/${runId}`)
+        fetchWithAuth(`${BASE_URL}/api/dev/evals/${runId}`)
             .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then(data => setTranscript(data))
             .catch(e => setError(e.message))

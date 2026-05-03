@@ -19,25 +19,25 @@ from learn_routes import router as learn_router
 from bank_routes import router as bank_router
 from blueprint_routes import router as blueprint_router, patch_blueprint
 from plato_routes import router as plato_router
+from feedback_routes import router as feedback_router
 from dependencies import get_current_user
 from fastapi import Depends
-from database import db_select, db_insert, db_update
+from pydantic import BaseModel
+from database import db_select, db_insert, db_update, db_upsert
 from memory import update_user_memory, get_user_memory
 
 app = FastAPI(title="Socra API")
 
-# Configure professional logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging — level controlled via LOG_LEVEL env var (default INFO)
+_log_level = getattr(logging, os.environ.get("LOG_LEVEL", "INFO").upper(), logging.INFO)
+logging.basicConfig(level=_log_level)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(_log_level)
 
-# Memory-specific file logger — writes to backend/memory_debug.log
+# Memory debug logger — stdout only (Render filesystem is ephemeral)
 _memory_log = logging.getLogger("memory_debug")
-_memory_log.setLevel(logging.DEBUG)
-_memory_log.propagate = False  # don't double-print to terminal
-_mfh = logging.FileHandler(os.path.join(os.path.dirname(__file__), "memory_debug.log"))
-_mfh.setFormatter(logging.Formatter("%(asctime)s  %(message)s"))
-_memory_log.addHandler(_mfh)
+_memory_log.setLevel(_log_level)
+_memory_log.propagate = True
 
 # ---------------------------------------------------------------------------
 # Developer role helper
@@ -75,6 +75,7 @@ app.include_router(learn_router, prefix="/api/learn")
 app.include_router(bank_router, prefix="/api/bank")
 app.include_router(blueprint_router, prefix="/api/blueprint")
 app.include_router(plato_router, prefix="/api/plato")
+app.include_router(feedback_router, prefix="/api/feedback")
 
 # Initialize AI handler
 # Will fail if ANTHROPIC_API_KEY is not set
@@ -89,10 +90,10 @@ async def start_session(request: StartSessionRequest, current_user: dict = Depen
             "chat_sessions",
             {"user_id": current_user["id"]}
         )
-        if not is_developer(current_user) and len(existing_sessions) >= 2:
+        if not is_developer(current_user) and len(existing_sessions) >= 10:
             raise HTTPException(
                 status_code=402,
-                detail="You have reached the free blueprint limit. Upgrade to Premium."
+                detail="You have reached the free session limit. Join the waitlist for early access."
             )
 
         if request.validate:
@@ -624,6 +625,25 @@ async def delete_session(session_id: str, current_user: dict = Depends(get_curre
     )
 
     return {"status": "ok", "message": "Session deleted"}
+
+# ---------------------------------------------------------------------------
+# Waitlist
+# ---------------------------------------------------------------------------
+class WaitlistRequest(BaseModel):
+    email: str
+
+@app.post("/api/waitlist")
+async def join_waitlist(request: WaitlistRequest, current_user: dict = Depends(get_current_user)):
+    supa = current_user["supabase"]
+    user_id = current_user["id"]
+    email = request.email.strip().lower()
+    if not email:
+        raise HTTPException(status_code=422, detail="Email is required.")
+    try:
+        await db_upsert(supa, "waitlist_signups", {"user_id": user_id, "email": email})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not save signup: {str(e)}")
+    return {"status": "ok"}
 
 # ---------------------------------------------------------------------------
 # Developer-only utility endpoints

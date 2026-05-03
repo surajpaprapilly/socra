@@ -128,7 +128,7 @@ function SessionRouteHandler({ sessionId, initialQuestion, initialMessage, resum
 function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDeveloper } = useAuth();
+  const { isDeveloper, user } = useAuth();
   const { showToast } = useToast();
 
   const shellPaths = ['/app', '/test', '/learn', '/bank', '/profile'];
@@ -242,7 +242,7 @@ function AppRoutes() {
     <div className={`min-h-screen bg-background text-textDefault relative overflow-x-hidden font-mono ${!isShellRoute && location.pathname !== '/' ? 'pt-16' : ''}`}>
       <div className="noise-overlay"></div>
       {!isShellRoute && <NavBar />}
-      <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
+      <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} userEmail={user?.email} />
 
       {isDeveloper && (
         <button
