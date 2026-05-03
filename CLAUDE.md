@@ -40,7 +40,7 @@ npm run lint
 **Backend** — copy `backend/.env.example` to `backend/.env`:
 - `ANTHROPIC_API_KEY` — required for all AI calls
 - `EXA_API_KEY` — required for article search (`learn_routes.py`)
-- `SUPABASE_URL` + `SUPABASE_JWT_SECRET` — database + auth
+- `SUPABASE_URL` + `SUPABASE_ANON_KEY` + `SUPABASE_KEY` — database + auth (tokens are verified via Supabase API, no JWT secret needed locally)
 - `ANTHROPIC_MODEL` — defaults to `claude-3-7-sonnet-20250219`
 - `DEV_ACCOUNT_EMAIL` — bypasses session rate limits for this account
 
