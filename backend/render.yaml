@@ -2,6 +2,7 @@ services:
   - type: web
     name: socra-backend
     env: python
+    rootDir: ./backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -14,8 +15,6 @@ services:
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_KEY
-        sync: false
-      - key: SUPABASE_JWT_SECRET
         sync: false
       - key: FRONTEND_URL
         sync: false
