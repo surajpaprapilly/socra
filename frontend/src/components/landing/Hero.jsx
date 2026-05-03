@@ -25,13 +25,13 @@ export default function Hero() {
             className="reveal reveal-delay-1 font-display leading-[1.08] tracking-tight"
             style={{ fontSize: 'clamp(42px, 4.5vw, 64px)' }}
           >
-            GP doesn&apos;t just test<br />
-            what you know.<br />
+            GP doesn&apos;t just<br />
+            test what you know.<br />
             <em className="text-amber not-italic">It tests how you think.</em>
           </h1>
 
           <p ref={ref3} className="reveal reveal-delay-2 font-serif italic text-lg text-textMuted leading-relaxed">
-            Socra puts you in a live Socratic dialogue that forces your argument to clarify under pressure — the same pressure Cambridge examiners apply.
+            Socra is a tutor calibrated to the latest GP syllabus — because what Cambridge rewards can't be crammed. It has to be practised.
           </p>
 
           <div ref={ref4} className="reveal reveal-delay-3 flex flex-col sm:flex-row gap-4 pt-2">

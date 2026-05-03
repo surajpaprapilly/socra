@@ -381,7 +381,7 @@ Where C is a JSON array of integers (1–5) representing which moves the student
         if len(messages) > MAX_MESSAGES:
             middle_messages = messages[2:-6]
             if middle_messages:
-                summary = await self.summarize_history(middle_messages)
+                summary = await self.summarize_history(middle_messages, question=question)
                 
                 pruned_msgs.extend(messages[:2]) # Keep the first turn
                 pruned_msgs.append({"role": "user", "content": f"[Intermediate conversation history summarized by system]:\n{summary}"})
@@ -563,12 +563,15 @@ Be encouraging. Provide ONLY the nudge text."""
         
         return response.content[0].text
 
-    async def summarize_history(self, messages: List[Dict[str, str]]) -> str:
+    async def summarize_history(self, messages: List[Dict[str, str]], question: str = "") -> str:
         history_str = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in messages])
-        
-        system_prompt = """You are an expert summarizer for a Socratic tutoring session.
+
+        question_line = f'\nThe GP essay question being discussed is: "{question}"\n' if question else ""
+
+        system_prompt = f"""You are an expert summarizer for a Socratic tutoring session.{question_line}
 Your task is to summarize the provided conversation history concisely.
 Focus only on the key ideas discussed, the student's stance, and any points of friction or conceptual breakthroughs.
+IMPORTANT: Preserve the exact wording of the essay question and any specific terms, definitions, or claims the student has established that are tied directly to that question. Do NOT paraphrase question language.
 Do NOT include pleasantries or the tutor's scaffolding instructions. Keep it under 3-4 sentences."""
 
         response = await self.client.messages.create(
@@ -577,7 +580,7 @@ Do NOT include pleasantries or the tutor's scaffolding instructions. Keep it und
             system=system_prompt,
             messages=[{"role": "user", "content": f"Please summarize this conversation history:\n\n{history_str}"}]
         )
-        
+
         return response.content[0].text.strip()
 
     async def merge_semantic_list(self, existing: list, new_items: list, list_type: str = "observations") -> list:
@@ -677,23 +680,28 @@ Your task: return a merged list that adds new items only if they are NOT semanti
         # Fail open — don't block the student if validation itself fails
         return True, ""
 
-    async def extract_blueprint_patch(self, messages: List[Dict[str, str]], current_blueprint: dict) -> dict:
-        system_prompt = """You are a strictly constrained blueprint extractor. You are given a General Paper (GP) Socratic tutoring conversation. Your job is to extract ONLY information that the student has EXPLICITLY and CONCRETELY established. 
-        
-DO NOT invent, infer, or guess. If an input is vague, partial, or just a stray thought, IGNORE IT entirely. Return only what is definitively established."""
-        
+    async def extract_blueprint_patch(self, messages: List[Dict[str, str]], current_blueprint: dict, question: str = "") -> dict:
+        question_line = f'\nThe GP essay question for this session is: "{question}"\n' if question else ""
+
+        system_prompt = f"""You are a strictly constrained blueprint extractor. You are given a General Paper (GP) Socratic tutoring conversation.{question_line}
+Your job is to extract ONLY information that the student has EXPLICITLY and CONCRETELY established.
+
+DO NOT invent, infer, or guess. If an input is vague, partial, or just a stray thought, IGNORE IT entirely. Return only what is definitively established.
+
+CRITICAL — for the `link` field of each paragraph: only populate it if the student's analytical link explicitly connects their example back to the essay question's specific claim or terms. A link that merely restates the paragraph point without tying it to the question must be left empty."""
+
         # Serialize history
         recent_messages = messages[-6:] if len(messages) > 6 else messages
         history_str = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in recent_messages])
         blueprint_str = json.dumps(current_blueprint, indent=2)
-        
+
         user_msg = f"""CONVERSATION HISTORY:
 {history_str}
 
 CURRENT BLUEPRINT STATE:
 {blueprint_str}
 
-INSTRUCTION: 
+INSTRUCTION:
 Return only the fields that have been newly established or meaningfully updated since the last blueprint state."""
 
         tools = [

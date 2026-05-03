@@ -482,6 +482,9 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                             ↵ to send
                         </div>
                     </form>
+                    <p className="mt-2 text-[10px] font-mono text-textMuted/35 tracking-wide">
+                        ✦ Sessions are auto-saved — view your progress anytime via <span className="text-textMuted/50">My Blueprints</span> in the sidebar.
+                    </p>
                 </div>
             </div>
 
