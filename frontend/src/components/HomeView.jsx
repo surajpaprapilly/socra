@@ -40,9 +40,9 @@ export default function HomeView() {
 
       {/* Today's Question — hero card */}
       <div className="mb-10">
-        <div className="font-mono text-[9px] tracking-[0.22em] uppercase text-amber/80 mb-3 flex items-center gap-2">
+        <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-amber/80 mb-3 flex items-center gap-2">
           <span>✦</span> Today's Question
-          <span className="font-serif italic normal-case tracking-normal text-textMuted/30 text-[10px] ml-1">
+          <span className="font-serif italic normal-case tracking-normal text-textMuted/30 text-[12px] ml-1">
             — changes daily
           </span>
         </div>
@@ -68,28 +68,28 @@ export default function HomeView() {
 
       {/* Suggested Questions */}
       <div>
-        <div className="font-mono text-[9px] tracking-[0.22em] uppercase text-textMuted/45 mb-3 flex items-center gap-2">
+        <div className="font-mono text-[11px] tracking-[0.22em] uppercase text-textMuted/70 mb-4 flex items-center gap-2">
           <span>◈</span> Suggested Questions
-          <span className="font-serif italic normal-case tracking-normal text-textMuted/25 text-[10px] ml-1">
+          <span className="font-serif italic normal-case tracking-normal text-textMuted/40 text-xs ml-1">
             — refreshes weekly
           </span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {SUGGESTED_QS.map((item, i) => (
             <div
               key={i}
               onClick={() => onSelectQuestion(item)}
-              className="bg-[#141210] border border-borderDark p-4 cursor-pointer hover:border-amber/30 hover:-translate-y-px transition-all duration-150 group animate-in fade-in"
+              className="bg-[#141210] border border-borderDark p-5 cursor-pointer hover:border-amber/30 hover:-translate-y-px transition-all duration-150 group animate-in fade-in"
               style={{ animationDelay: `${i * 60}ms` }}
             >
-              <p className="font-serif italic text-[12px] text-textDefault/80 leading-snug mb-3">
+              <p className="font-serif italic text-[15px] text-textDefault/90 leading-relaxed mb-4">
                 "{item.q}"
               </p>
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[8px] uppercase tracking-wider text-textMuted/40">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-textMuted/55">
                   {item.year} A-Level GP
                 </span>
-                <span className="font-mono text-[9px] text-textMuted/30 group-hover:text-amber group-hover:translate-x-0.5 transition-all duration-150">
+                <span className="font-mono text-xs text-textMuted/40 group-hover:text-amber group-hover:translate-x-0.5 transition-all duration-150">
                   →
                 </span>
               </div>

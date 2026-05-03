@@ -130,7 +130,10 @@ export default function Sidebar({
       {/* Logo + streak */}
       <div className="px-4 py-3.5 border-b border-borderDark flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <span className="font-display text-lg text-textDefault tracking-wide">Socra</span>
+          <button
+            onClick={() => navigate('/app')}
+            className="font-display text-lg text-textDefault tracking-wide hover:text-amber transition-colors"
+          >Socra</button>
           <div className="flex items-center gap-1 font-mono text-[12px] text-amber">
             <span className="text-xs">🔥</span>
             <span className="font-medium">{streak}</span>

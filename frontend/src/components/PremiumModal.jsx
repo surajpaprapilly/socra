@@ -89,7 +89,7 @@ const PremiumModal = ({ isOpen, onClose, userEmail }) => {
                 <>
                   <div className="select-none text-4xl mb-4">✦</div>
                   <h2 className="text-2xl font-bold text-amber mb-3">
-                    You've completed 10 free sessions.
+                    You've completed the free sessions.
                   </h2>
                   <p className="text-textSubtle mb-6 leading-relaxed">
                     Socra is still in early access. Join the waitlist and we'll give you{' '}
@@ -103,7 +103,7 @@ const PremiumModal = ({ isOpen, onClose, userEmail }) => {
                       placeholder="your@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 bg-layer2 border border-borderSubtle text-textDefault placeholder:text-textSubtle focus:outline-none focus:border-amber transition-colors"
+                      className="w-full px-4 py-3 bg-layer2 border border-borderSubtle text-textDefault placeholder:text-textSubtle focus:outline-none focus:border-amber transition-colors [color-scheme:dark]"
                     />
                     <button
                       type="submit"
@@ -111,13 +111,6 @@ const PremiumModal = ({ isOpen, onClose, userEmail }) => {
                       className="w-full py-4 px-6 bg-amber text-layer1 font-bold text-lg hover:bg-amber/90 transition-colors disabled:opacity-60"
                     >
                       {loading ? 'Joining…' : 'Join the waitlist'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      className="w-full py-3 text-textSubtle hover:text-textDefault transition-colors text-sm"
-                    >
-                      Maybe later
                     </button>
                   </form>
                 </>

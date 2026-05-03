@@ -1,5 +1,4 @@
-import pydantic_core
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 class ChatMessageBase(BaseModel):
@@ -18,7 +17,7 @@ class StartSessionResponse(BaseModel):
 
 class ChatMessageRequest(BaseModel):
     session_id: str
-    message: str
+    message: str = Field(..., max_length=4000)
 
 class BlueprintMeta(BaseModel):
     thesis: Optional[str] = None
