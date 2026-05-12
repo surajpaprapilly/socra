@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchWithAuth, BASE_URL } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
+import { usePostHog } from '@posthog/react';
 
 // ─── Quality Badge ─────────────────────────────────────────────────────────────
 function QualityBadge({ label, active }) {
@@ -44,6 +45,7 @@ export default function SavedBlueprints() {
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const posthog = usePostHog();
 
     const handleDeleteSession = async (sessionId) => {
         try {
@@ -164,7 +166,17 @@ export default function SavedBlueprints() {
                             return (
                                 <div
                                     key={session.session_id}
-                                    onClick={() => !isConfirming && navigate(`/test/${session.session_id}`)}
+                                    onClick={() => {
+                                        if (!isConfirming) {
+                                            posthog?.capture('session_resumed', {
+                                                session_id: session.session_id,
+                                                question: session.question,
+                                                turn: session.turn,
+                                                is_complete: session.is_complete,
+                                            });
+                                            navigate(`/test/${session.session_id}`);
+                                        }
+                                    }}
                                     className="group bg-[#141210] border border-[#2A2825] hover:border-amber/20 transition-all duration-300 p-6 md:p-8 cursor-pointer relative overflow-hidden animate-in fade-in slide-in-from-bottom-6"
                                     style={{ animationDelay: `${Math.min(idx, 10) * 80}ms`, animationFillMode: 'both' }}
                                 >

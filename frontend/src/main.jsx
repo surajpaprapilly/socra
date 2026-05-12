@@ -2,6 +2,15 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import posthog from 'posthog-js'
+import { PostHogProvider } from '@posthog/react'
+
+if (import.meta.env.VITE_PUBLIC_POSTHOG_TOKEN) {
+  posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_TOKEN, {
+    api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+    defaults: '2026-01-30',
+  })
+}
 
 if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
   document.getElementById('root').innerHTML = `
@@ -19,7 +28,9 @@ if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
 } else {
   createRoot(document.getElementById('root')).render(
     <StrictMode>
-      <App />
+      <PostHogProvider client={posthog}>
+        <App />
+      </PostHogProvider>
     </StrictMode>,
   );
 }

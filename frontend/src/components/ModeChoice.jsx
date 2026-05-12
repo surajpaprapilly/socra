@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../context/SessionContext';
+import { usePostHog } from '@posthog/react';
 
 export default function ModeChoice() {
     const navigate = useNavigate();
     const { statement, reaction, source, customQuestion } = useSession();
     const [showCards, setShowCards] = useState(false);
+    const posthog = usePostHog();
 
     // If accessed directly without context, redirect to home
     useEffect(() => {
@@ -28,11 +30,13 @@ export default function ModeChoice() {
 
     const handleLearnMode = () => {
         const questionToPass = isCustom ? customQuestion : statement;
+        posthog?.capture('mode_selected', { mode: 'learn', question: questionToPass, source });
         navigate('/learn', { state: { question: questionToPass } });
     };
 
     const handleTestMode = () => {
         const questionToPass = isCustom ? customQuestion : statement;
+        posthog?.capture('mode_selected', { mode: 'test', question: questionToPass, source });
         navigate('/test/init', { state: { question: questionToPass, isCustom } });
     };
 

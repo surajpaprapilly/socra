@@ -8,6 +8,7 @@ import MilestoneCard from './MilestoneCard';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { fetchWithAuth, BASE_URL } from '../lib/supabase';
+import { usePostHog } from '@posthog/react';
 
 
 const SpineReadyCTA = () => (
@@ -81,6 +82,7 @@ const getPhaseBanner = (phaseNum) => {
 export default function ChatInterface({ sessionId, initialQuestion, initialMessage, resumeHistory, initialTurn = 1, initialScore = 0 }) {
     const { reaction } = useSession();
     const { showToast } = useToast();
+    const posthog = usePostHog();
 
     const [messages, setMessages] = useState(() => {
         if (resumeHistory && resumeHistory.length > 0) return resumeHistory;
@@ -195,6 +197,13 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                     const meta = JSON.parse(dataStr);
                                     if (meta.current_phase) {
                                         if (meta.current_phase > phase && meta.current_phase <= 5) {
+                                            posthog?.capture('phase_advanced', {
+                                                session_id: sessionId,
+                                                question: initialQuestion,
+                                                from_phase: phase,
+                                                to_phase: meta.current_phase,
+                                                score: meta.question_score,
+                                            });
                                             setPhase(meta.current_phase);
                                             // Phase 3 transition is handled by the SpineReadyCTA card below
                                             if (meta.current_phase !== 3) {
@@ -205,6 +214,11 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
                                             }
                                         }
                                         if (meta.current_phase >= 6 && !isFinished) {
+                                            posthog?.capture('session_completed', {
+                                                session_id: sessionId,
+                                                question: initialQuestion,
+                                                final_score: meta.question_score,
+                                            });
                                             setIsFinished(true);
                                             setTimeout(async () => {
                                                 try {
@@ -307,6 +321,12 @@ export default function ChatInterface({ sessionId, initialQuestion, initialMessa
         if (!input.trim() || isStreaming) return;
 
         const userMsg = input.trim();
+        posthog?.capture('message_sent', {
+            session_id: sessionId,
+            question: initialQuestion,
+            phase,
+            message_length: userMsg.length,
+        });
         setInput('');
         setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
 

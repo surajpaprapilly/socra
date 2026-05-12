@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { usePostHog } from '@posthog/react';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -12,6 +13,7 @@ export default function LoginScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/app';
+  const posthog = usePostHog();
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
@@ -28,6 +30,13 @@ export default function LoginScreen() {
     if (authResponse.error) {
       setError(authResponse.error.message);
     } else if (authResponse.data.user) {
+      const user = authResponse.data.user;
+      posthog?.identify(user.id, { email: user.email });
+      if (isSignUp) {
+        posthog?.capture('user_signed_up', { method: 'email', email: user.email });
+      } else {
+        posthog?.capture('user_signed_in', { method: 'email', email: user.email });
+      }
       navigate(from, { replace: true });
     }
     setLoading(false);
@@ -36,6 +45,7 @@ export default function LoginScreen() {
   const handleGoogleAuth = async () => {
     setLoading(true);
     setError(null);
+    posthog?.capture('user_signed_in_google');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

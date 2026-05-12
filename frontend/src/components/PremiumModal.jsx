@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../context/ToastContext';
 import { fetchWithAuth, BASE_URL } from '../lib/supabase';
+import { usePostHog } from '@posthog/react';
 
 const PremiumModal = ({ isOpen, onClose, userEmail }) => {
   const { showToast } = useToast();
+  const posthog = usePostHog();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,7 @@ const PremiumModal = ({ isOpen, onClose, userEmail }) => {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || 'Something went wrong.');
       }
+      posthog?.capture('waitlist_joined', { email: email.trim() });
       setSubmitted(true);
       showToast("You're on the list — we'll be in touch soon.", 'success');
     } catch (err) {

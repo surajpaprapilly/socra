@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { THEMES } from '../data/themes';
 import { PAST_YEAR_QUESTIONS } from '../data/pastYearQuestions';
 import { useSession } from '../context/SessionContext';
+import { usePostHog } from '@posthog/react';
 
 export default function ThemeSelection() {
     const navigate = useNavigate();
     const { setSession, clearSession } = useSession();
+    const posthog = usePostHog();
 
     // Right panel tab: 'pastyear' | 'custom'
     const [activeTab, setActiveTab] = useState('pastyear');
@@ -35,6 +37,7 @@ export default function ThemeSelection() {
     }, [selectedYear]);
 
     const handleThemeSelect = (theme) => {
+        posthog?.capture('theme_selected', { theme_id: theme.id, theme_name: theme.name });
         setSession({
             theme: theme.id,
             themeName: theme.name,
@@ -44,6 +47,7 @@ export default function ThemeSelection() {
     };
 
     const handlePastYearQuestion = (q, year) => {
+        posthog?.capture('question_selected', { question: q, year, source: 'past_year' });
         setSession({
             source: 'custom_question',
             customQuestion: q
@@ -54,6 +58,7 @@ export default function ThemeSelection() {
     const handleCustomSubmit = (e) => {
         e.preventDefault();
         if (question.trim().length < 5) return;
+        posthog?.capture('question_selected', { question: question.trim(), source: 'custom' });
         setSession({
             source: 'custom_question',
             customQuestion: question.trim()

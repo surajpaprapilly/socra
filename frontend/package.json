@@ -17,9 +17,11 @@
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/utilities": "^3.2.2",
+    "@posthog/react": "^1.9.0",
     "@supabase/supabase-js": "^2.101.0",
     "@tailwindcss/typography": "^0.5.19",
     "framer-motion": "^12.38.0",
+    "posthog-js": "^1.373.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",

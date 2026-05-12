@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSession } from '../context/SessionContext';
 import { useToast } from '../context/ToastContext';
 import { fetchWithAuth, BASE_URL } from '../lib/supabase';
+import { usePostHog } from '@posthog/react';
 
 export default function FinalBlueprint({ insights, blueprint, platoReflection }) {
     const [copied, setCopied] = useState(false);
@@ -9,6 +10,7 @@ export default function FinalBlueprint({ insights, blueprint, platoReflection })
     const [isSaving, setIsSaving] = useState(false);
     const { customQuestion, readings, canvasData } = useSession();
     const { showToast } = useToast();
+    const posthog = usePostHog();
 
     const paragraphs = blueprint?.paragraphs || [];
     const counterArg = blueprint?.counter_argument;
@@ -40,6 +42,11 @@ export default function FinalBlueprint({ insights, blueprint, platoReflection })
         ].join('\n').trim();
 
         navigator.clipboard.writeText(text);
+        posthog?.capture('blueprint_exported', {
+            question: customQuestion || blueprint?.question,
+            insights_count: insights.length,
+            paragraphs_count: paragraphs.length,
+        });
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
@@ -69,6 +76,11 @@ export default function FinalBlueprint({ insights, blueprint, platoReflection })
             });
 
             if (response.ok) {
+                posthog?.capture('blueprint_saved_to_bank', {
+                    question: customQuestion || blueprint?.question,
+                    insights_count: insights.length,
+                    paragraphs_count: paragraphs.length,
+                });
                 setSavedToBank(true);
             } else {
                 showToast('Failed to save blueprint.', 'error');

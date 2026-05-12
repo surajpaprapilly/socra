@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } fro
 import { SessionProvider, useSession } from './context/SessionContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider, useToast } from './context/ToastContext';
+import { usePostHog } from '@posthog/react';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginScreen from './components/auth/LoginScreen';
 import LandingScreen from './components/LandingScreen';
@@ -130,6 +131,11 @@ function AppRoutes() {
   const location = useLocation();
   const { isDeveloper, user } = useAuth();
   const { showToast } = useToast();
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    posthog?.capture('$pageview', { $current_url: window.location.href, path: location.pathname });
+  }, [location.pathname]);
 
   const shellPaths = ['/app', '/test', '/learn', '/bank', '/profile'];
   const isShellRoute = shellPaths.some(p => location.pathname.startsWith(p));
@@ -168,6 +174,7 @@ function AppRoutes() {
       if (!response.ok) {
         if (response.status === 402) {
             setShowPremiumModal(true);
+            posthog?.capture('premium_modal_shown', { question });
             return;
         }
         if (response.status === 422) {
@@ -183,6 +190,12 @@ function AppRoutes() {
       setSessionId(data.session_id);
       setInitialQuestion(question);
       setInitialMessage(data.first_message);
+      posthog?.capture('session_started', {
+        session_id: data.session_id,
+        question,
+        is_custom: isCustom,
+        has_reaction: reaction !== null,
+      });
       navigate(`/test/${data.session_id}`);
     } catch (error) {
       console.error("Error starting session:", error);

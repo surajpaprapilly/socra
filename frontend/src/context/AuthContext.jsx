@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import posthog from 'posthog-js';
 
 const AuthContext = createContext({});
 
@@ -24,10 +25,18 @@ export const AuthProvider = ({ children }) => {
     });
 
     // Listen for auth changes (login, logout, refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setIsDeveloper(extractDevFlag(session));
       setLoading(false);
+      if (session?.user) {
+        posthog.identify(session.user.id, {
+          email: session.user.email,
+          role: session.user.app_metadata?.role ?? 'user',
+        });
+      } else if (event === 'SIGNED_OUT') {
+        posthog.reset();
+      }
     });
 
     return () => subscription.unsubscribe();
