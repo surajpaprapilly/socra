@@ -1,27 +1,55 @@
-.venv
+# ---------------------------------------------------------------------------
+# Secrets & environment
+# ---------------------------------------------------------------------------
 .env
-2021_general_paper_examiner_report.pdf
-Paper 1 Examiner Comments Part 2.pdf
-Paper 1 Examiner Comments.pdf
-*.pdf
+.env.*
+!.env.example
 
-# Python cache
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+.venv/
 __pycache__/
 *.py[cod]
 *.egg-info/
 
-# macOS system files
-.DS_Store
+# ---------------------------------------------------------------------------
+# Node / frontend build output
+# ---------------------------------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/build/
+frontend/test-results/
+frontend/playwright-report/
 
-# VSCode settings
-.vscode/
+# ---------------------------------------------------------------------------
+# Logs & generated run artifacts
+# ---------------------------------------------------------------------------
+*.log
 backend/error_log.txt
-frontend/test-results/mobile-chat-mobile-tab-bar-6ae54-ws-blueprint-and-hides-chat-iPhone-14/trace.zip
-frontend/test-results/mobile-chat-mobile-tab-bar-tablist-is-visible-on-mobile-iPhone-14/trace.zip
-frontend/test-results/mobile-chat-mobile-tab-bar-b934f-t-blueprint-panel-is-hidden-iPhone-14/trace.zip
+backend/memory_debug.log
+backend/data/eval_logs/
 
+# ---------------------------------------------------------------------------
+# Copyrighted exam material — do not commit (Cambridge / SEAB)
+# ---------------------------------------------------------------------------
+*.pdf
 
-frontend/HANDOFF_LandingPage.md
+# ---------------------------------------------------------------------------
+# Editor / OS / tooling
+# ---------------------------------------------------------------------------
+.DS_Store
+.vscode/
+.claude/
+**/.claude/
+
+# ---------------------------------------------------------------------------
+# Internal working docs (not for the public repo)
+# ---------------------------------------------------------------------------
+CLAUDE.md
+**/CLAUDE.md
 DEPLOYMENT.md
-.claude/skills/learn/SKILL.md
 Explanation.md
+implementation.md
+pivot.md
+frontend/HANDOFF_LandingPage.md
